@@ -1,0 +1,2 @@
+https://play.pokemonshowdown.com/data/
+https://play.pokemonshowdown.com/data/pokedex.json
