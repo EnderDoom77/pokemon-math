@@ -1,5 +1,6 @@
 from collections import defaultdict
 import json
+from os import path
 from typing import Literal, TypeAlias
 import re
 
@@ -53,6 +54,11 @@ class Pokemon:
         self.egg_groups = eggGroups
         # Competitive tier of the pokemon
         self.tier = tier
+
+        self.image : str | None = None
+        img_path = f"img/{str(self.num).rjust(4,'0')}_{self.id}.png"
+        if path.exists(img_path):
+            self.image = img_path
         
         self.misc : dict[str, any] = {}
         for k,v in kwargs.items():
