@@ -62,12 +62,21 @@ forms = {
     "crowned": "-c",
     "eternamax": "-e",
     "rapidstrike": "-r",
+    "rapidstrikegmax": "-rgi",
     "bloodmoon": "-b",
     "ice": "-i",
     "shadow": "-s",
-    "hero": "-h"
+    "hero": "-h",
+    "cosplay": "-c",
+    "rockstar": "-rs",
+    "belle": "-b",
+    "popstar": "-ps",
+    "phd": "-phd",
+    "libre": "-l"
 }
-registered : set[tuple[int,str]] = set()
+registered : set[tuple[int,str]] = {
+    (25, "-a")
+}
 suffixes = list(forms.keys())
 suffixes = sorted(suffixes, key = lambda x: -len(x))
 print(suffixes)
