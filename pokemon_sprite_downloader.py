@@ -44,6 +44,7 @@ forms = {
     "white": "-w",
     "resolute": "-r",
     "pirouette": "-p",
+    "slash": "",
     "ash": "-a",
     "eternal": "-e",
     "f": "-f",
@@ -90,6 +91,7 @@ for pokemon in pokemon_info:
         if not new_id.endswith(suffix): continue
         new_id = new_id[:-len(suffix)]
         s = forms[suffix]
+        break
 
     key = (pokemon.num, s)
     if key in registered: continue
