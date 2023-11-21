@@ -68,7 +68,7 @@ forms = {
     "shadow": "-s",
     "hero": "-h",
     "cosplay": "-c",
-    "rockstar": "-rs",
+    "rockstar": "-r",
     "belle": "-b",
     "popstar": "-ps",
     "phd": "-phd",
