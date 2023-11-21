@@ -60,6 +60,7 @@ def base_css(config : Config | None = None):
     .pokemon > img {{
         min-height: 80px;
         max-height: 120px;
+        image-rendering: pixelated;
     }}
 
     .pokemon > .name {{
