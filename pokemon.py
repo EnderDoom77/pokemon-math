@@ -10,11 +10,13 @@ PokeStat = Literal["hp", "atk", "def", "spa", "spd", "spe"]
 def normalize_name(name : str):
     return "".join([c for c in name.lower() if c.isalnum()])
 
+regions = {"alola", "galar", "paldea", "hisui"}
+
 class Pokemon:
     def __init__(self, 
         id:str, num:int, name:str, types:list[str],
         baseStats: dict[PokeStat, float], abilities: dict[str,str] = {},
-        heightm: float = -1, weightkg: float = -1, color: str = "", gender = "",
+        heightm: float = -1, weightkg: float = -1, color: str = "", gender = "", forme = "",
         evos: list[str] = [], prevo: str = "", evoType: str = "level", evoCondition = "", evoLevel: int = -1, 
         eggGroups: list[str] = [], tier: str = "",
         **kwargs):
@@ -54,6 +56,24 @@ class Pokemon:
         self.egg_groups = eggGroups
         # Competitive tier of the pokemon
         self.tier = tier
+        # Any special forms that apply to this variant
+        self.formes = [f.lower() for f in forme.split("-")]
+
+        # Postprocessing variables
+        self.is_regional = False
+        for r in regions:
+            if r in self.formes:
+                self.region = r
+                self.is_regional = True
+                break
+        # self.starter = "starter" in self.formes
+        self.is_mega = "mega" in self.formes
+        self.is_gmax = "gmax" in self.formes
+        self.is_totem = "totem" in self.formes
+        self.is_base = (self.formes == [])
+
+        self.alt_types = False
+        self.misc_variant = not (self.is_base or self.is_regional or self.is_mega or self.is_gmax or self.is_totem)
 
         self.image : str | None = None
         img_path = f"img/{str(self.num).rjust(4,'0')}_{self.id}.png"
@@ -90,6 +110,19 @@ class Config:
     def from_dict(data : dict[str, any]) -> "Config":
         return Config(**data)
 
+def postprocess_pokemon(pokemon_list: list[Pokemon]):
+    current_num = 0
+    current_types = ""
+    for p in pokemon_list:
+        if p.num != current_num:
+            current_num = p.num
+            current_types = "_".join(p.types)
+            p.is_base = True
+            p.misc_variant = False
+            continue
+        if "_".join(p.types) != current_types:
+            p.alt_types = True
+
 def read_config() -> Config:
     with open("data/config.json") as f:
         data = json.load(f)
@@ -98,4 +131,6 @@ def read_config() -> Config:
 def read_pokemon() -> list[Pokemon]:
     with open("data/pokedex.json") as f:
         pokedex : dict[str,dict] = json.load(f)
-        return [Pokemon.from_dict(entry, p_dict) for entry,p_dict in pokedex.items()]
+        basic = [Pokemon.from_dict(entry, p_dict) for entry,p_dict in pokedex.items()]
+        postprocess_pokemon(basic)
+        return basic

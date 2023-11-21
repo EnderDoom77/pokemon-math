@@ -65,6 +65,7 @@ forms = {
     "bloodmoon": "-b",
     "ice": "-i",
     "shadow": "-s",
+    "blade": "-b",
     "hero": "-h"
 }
 registered : set[tuple[int,str]] = set()
