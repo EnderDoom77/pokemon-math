@@ -57,7 +57,7 @@ class Pokemon:
         # Competitive tier of the pokemon
         self.tier = tier
         # Any special forms that apply to this variant
-        self.formes = [f.lower() for f in forme.split("-")]
+        self.formes = [f.lower() for f in forme.split("-") if f]
 
         # Postprocessing variables
         self.is_regional = False
@@ -70,7 +70,7 @@ class Pokemon:
         self.is_mega = "mega" in self.formes
         self.is_gmax = "gmax" in self.formes
         self.is_totem = "totem" in self.formes
-        self.is_base = (self.formes == [])
+        self.is_base = (self.formes == []) and (self.num > 0)
 
         self.alt_types = False
         self.misc_variant = not (self.is_base or self.is_regional or self.is_mega or self.is_gmax or self.is_totem)
@@ -117,7 +117,6 @@ def postprocess_pokemon(pokemon_list: list[Pokemon]):
         if p.num != current_num:
             current_num = p.num
             current_types = "_".join(p.types)
-            p.is_base = True
             p.misc_variant = False
             continue
         if "_".join(p.types) != current_types:
