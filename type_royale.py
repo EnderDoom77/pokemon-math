@@ -10,8 +10,10 @@ from pokemon import Pokemon, read_pokemon
  
 # activate the pygame library .
 pygame.init()
-X = 600
-Y = 600
+X = 800
+Y = 500
+IMG_SIZE = 300
+IMG_MARGIN = 50
  
 # create the display surface object
 # of specific dimension..e(X, Y).
@@ -106,8 +108,6 @@ font = pygame.font.Font('fonts/rubik/static/Rubik-Regular.ttf', 32)
 # paint screen one time
 pygame.display.flip()
 status = True
-IMG_SIZE = 250
-IMG_MARGIN = 25
 
 scores = {
     pygame.K_1: 0,
