@@ -67,15 +67,18 @@ forms = {
     "hero": "-h"
 }
 registered : set[tuple[int,str]] = set()
+suffixes = list(forms.keys())
+suffixes = sorted(suffixes, key = lambda x: -len(x))
+print(suffixes)
 
 for pokemon in pokemon_info:
     if pokemon.num <= 0: continue
     new_id = pokemon.id
     s = ""
-    for suffix,t_suffix in forms.items():
+    for suffix in suffixes:
         if not new_id.endswith(suffix): continue
         new_id = new_id[:-len(suffix)]
-        s = t_suffix
+        s = forms[suffix]
 
     key = (pokemon.num, s)
     if key in registered: continue
