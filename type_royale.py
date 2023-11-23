@@ -101,7 +101,8 @@ def choose_right():
     choose(right_pokemon, left_pokemon)
 
 def show_stats():
-    pass
+    tagged_scores = [(score, p.name) for score, p in zip(elo, eligible_list)]
+    print(sorted(tagged_scores, reverse=True))
 
 font = pygame.font.Font('fonts/rubik/static/Rubik-Regular.ttf', 32)
 
@@ -137,6 +138,8 @@ while (status):
             for k, s in scores.items():
                 if i.key == k:
                     choose(left_pokemon, right_pokemon, 1 - s)
+            if i.key == pygame.K_s:
+                show_stats()
 
     for left, pokemon in [(IMG_MARGIN, left_pokemon), (3 * IMG_MARGIN + IMG_SIZE, right_pokemon)]:
         # create a surface object, image is drawn on it.

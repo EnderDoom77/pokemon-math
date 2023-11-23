@@ -87,6 +87,15 @@ class Pokemon:
     def from_dict(pokemon_id, data : dict[str, any]) -> "Pokemon":
         return Pokemon(pokemon_id, **data)
     
+    def __lt__(self, other : "Pokemon"):
+        return self.num < other.num
+    def __le__(self, other : "Pokemon"):
+        return self.num <= other.num
+    def __gt__(self, other : "Pokemon"):
+        return self.num > other.num
+    def __ge__(self, other : "Pokemon"):
+        return self.num >= other.num
+
     def __repr__(self):
         return f"{self.id} - {self.types}"
 
