@@ -4,9 +4,9 @@ import math
 from os import path
 from random import Random
 import pygame
-import json
 
 from pokemon import Pokemon, read_pokemon
+from lib.royalelib import *
 from session.session import Session
  
 # activate the pygame library .
@@ -26,7 +26,7 @@ pygame.display.set_caption('image')
 weights = defaultdict(float)
 
 pokemon_list = read_pokemon()
-eligible_list = [p for p in pokemon_list if p.image and (p.is_base or (p.is_regional and not (p.is_totem or p.is_gmax or p.is_mega or p.num <= 0)))]
+eligible_list = filter_eligible(pokemon_list)
 
 id_to_index = dict()
 for i,p in enumerate(eligible_list):
@@ -35,25 +35,12 @@ for i,p in enumerate(eligible_list):
 elo = [500 for p in eligible_list]
 l_rate = [400 for p in eligible_list]
 
-def load(path):
-    global elo
-    global l_rate
-    with open(f"saves/{path}.json", "r") as f:
-        data = json.load(f)
-        elo = data["elo"]
-        l_rate = data["l_rate"]
-
-def save(path):
-    with open(f"saves/{path}.json", "w") as f:
-        data = {"elo": elo, "l_rate": l_rate}
-        json.dump(data, f)
-
 session: Session = Session().load()
 
 if path.exists(session.savefile):
-    load(session.savefile)
+    elo, l_rate = load(session.savefile)
 else:
-    save(session.savefile)
+    save(session.savefile, elo, l_rate)
 
 rng = Random()
 
@@ -101,7 +88,7 @@ def choose(p1: Pokemon, p2: Pokemon, score):
     elo[idx_l] = max(elo_min, elo_l + int(delta_l))
     l_rate[idx_w] = max(l_rate_min, int(k_w * l_rate_decay))
     l_rate[idx_l] = max(l_rate_min, int(k_l * l_rate_decay))
-    save(session.savefile)
+    save(session.savefile, elo, l_rate)
     fetch_and_set_pokemon_pair()
 
 def modify_both(p1: Pokemon, p2: Pokemon, result: float):
@@ -113,7 +100,7 @@ def modify_both(p1: Pokemon, p2: Pokemon, result: float):
         elo[idx] = max(elo_min, elo[idx] + int(delta))
         l_rate[idx] *= l_rate_decay
 
-    save(session.savefile)
+    save(session.savefile, elo, l_rate)
     fetch_and_set_pokemon_pair()
 
 def choose_left():
@@ -130,20 +117,6 @@ def penalize_both():
 def show_stats():
     tagged_scores = [(score, p.name) for score, p in zip(elo, eligible_list)]
     print(sorted(tagged_scores, reverse=True))
-
-def get_session_data() -> Session:
-    return Session().load()
-
-def save_session_data(data: Session):
-    data.save()
-
-def get_default_savefile() -> str:
-    return get_session_data().savefile
-def change_savefile():
-    new_savefile = input("save file name: ")
-    global session
-    session.savefile = new_savefile
-    save_session_data(session)
 
 font = pygame.font.Font('fonts/rubik/static/Rubik-Regular.ttf', 32)
 
