@@ -7,6 +7,7 @@ import pygame
 import json
 
 from pokemon import Pokemon, read_pokemon
+from session.session import Session
  
 # activate the pygame library .
 pygame.init()
@@ -37,32 +38,44 @@ l_rate = [400 for p in eligible_list]
 def load(path):
     global elo
     global l_rate
-    with open(path) as f:
+    with open(f"saves/{path}.json", "r") as f:
         data = json.load(f)
         elo = data["elo"]
         l_rate = data["l_rate"]
 
 def save(path):
-    with open(path, "w") as f:
+    with open(f"saves/{path}.json", "w") as f:
         data = {"elo": elo, "l_rate": l_rate}
         json.dump(data, f)
 
-SAVEFILE = input("save file name: ")
-SAVEFILE = f"saves/{SAVEFILE}.json"
+session: Session = Session().load()
 
-if path.exists(SAVEFILE):
-    load(SAVEFILE)
+if path.exists(session.savefile):
+    load(session.savefile)
 else:
-    save(SAVEFILE)
+    save(session.savefile)
 
 rng = Random()
 
+MAX_ELO_DELTA_FOR_MATCHMAKING = 400
+def match_weight_by_elo_delta(elo_delta: float) -> int:
+    linear_p = max(0, (MAX_ELO_DELTA_FOR_MATCHMAKING - abs(elo_delta)) / MAX_ELO_DELTA_FOR_MATCHMAKING)
+    nonlinear_p = pow(linear_p, 1.25)
+    return int(500 * nonlinear_p)
+
 def fetch_pokemon_pair() -> tuple[Pokemon, Pokemon]:
-    c1,c2 = tuple(rng.sample(eligible_list, 2, counts=elo))
-    if c1.id == c2.id:
-        c1,c2 = fetch_pokemon_pair()
-    return c1, c2
-    
+    main = rng.sample(eligible_list, 1, counts=elo)[0]
+    main_index = eligible_list.index(main)
+    main_elo = elo[main_index]
+    counts = [0 if i == main_index else match_weight_by_elo_delta(elo_val - main_elo) for i,elo_val in enumerate(elo)]
+    if sum(counts) == 0:
+        return fetch_pokemon_pair()
+    alt = rng.sample(eligible_list, 1, counts = counts)[0]
+    return main, alt
+def fetch_and_set_pokemon_pair():
+    global left_pokemon
+    global right_pokemon
+    left_pokemon, right_pokemon = fetch_pokemon_pair()
 
 left_pokemon, right_pokemon = fetch_pokemon_pair()
 l_rate_decay = 0.95
@@ -70,13 +83,13 @@ l_rate_min = 50
 elo_min = 100
 
 def choose(p1: Pokemon, p2: Pokemon, score):
-    id_w = id_to_index[p1.id]
-    id_l = id_to_index[p2.id]
+    idx_w = id_to_index[p1.id]
+    idx_l = id_to_index[p2.id]
     
-    elo_w = elo[id_w]
-    elo_l = elo[id_l]
-    k_w = l_rate[id_w]
-    k_l = l_rate[id_l]
+    elo_w = elo[idx_w]
+    elo_l = elo[idx_l]
+    k_w = l_rate[idx_w]
+    k_l = l_rate[idx_l]
     q_w = math.pow(10, elo_w/400)
     q_l = math.pow(10, elo_l/400)
     
@@ -84,15 +97,24 @@ def choose(p1: Pokemon, p2: Pokemon, score):
     delta_w = k_w * (score - expected_score)
     delta_l = k_l * (expected_score - score)
 
-    elo[id_w] = max(elo_min, elo_w + int(delta_w))
-    elo[id_l] = max(elo_min, elo_l + int(delta_l))
-    l_rate[id_w] = max(l_rate_min, int(k_w * l_rate_decay))
-    l_rate[id_l] = max(l_rate_min, int(k_l * l_rate_decay))
-    save(SAVEFILE)
+    elo[idx_w] = max(elo_min, elo_w + int(delta_w))
+    elo[idx_l] = max(elo_min, elo_l + int(delta_l))
+    l_rate[idx_w] = max(l_rate_min, int(k_w * l_rate_decay))
+    l_rate[idx_l] = max(l_rate_min, int(k_l * l_rate_decay))
+    save(session.savefile)
+    fetch_and_set_pokemon_pair()
 
-    global left_pokemon
-    global right_pokemon
-    left_pokemon, right_pokemon = fetch_pokemon_pair()    
+def modify_both(p1: Pokemon, p2: Pokemon, result: float):
+    idx_w = id_to_index[p1.id]
+    idx_l = id_to_index[p2.id]
+
+    for idx in (idx_w, idx_l):
+        delta = result * l_rate[idx]
+        elo[idx] = max(elo_min, elo[idx] + int(delta))
+        l_rate[idx] *= l_rate_decay
+
+    save(session.savefile)
+    fetch_and_set_pokemon_pair()
 
 def choose_left():
     choose(left_pokemon, right_pokemon)
@@ -100,9 +122,28 @@ def choose_left():
 def choose_right():
     choose(right_pokemon, left_pokemon)
 
+def boost_both():
+    modify_both(left_pokemon, right_pokemon, 1)
+def penalize_both():
+    modify_both(left_pokemon, right_pokemon, -1)
+
 def show_stats():
     tagged_scores = [(score, p.name) for score, p in zip(elo, eligible_list)]
     print(sorted(tagged_scores, reverse=True))
+
+def get_session_data() -> Session:
+    return Session().load()
+
+def save_session_data(data: Session):
+    data.save()
+
+def get_default_savefile() -> str:
+    return get_session_data().savefile
+def change_savefile():
+    new_savefile = input("save file name: ")
+    global session
+    session.savefile = new_savefile
+    save_session_data(session)
 
 font = pygame.font.Font('fonts/rubik/static/Rubik-Regular.ttf', 32)
 
@@ -138,6 +179,12 @@ while (status):
             for k, s in scores.items():
                 if i.key == k:
                     choose(left_pokemon, right_pokemon, 1 - s)
+            if i.key == pygame.K_UP:
+                boost_both()
+            if i.key == pygame.K_DOWN:
+                penalize_both()
+            if i.key == pygame.K_r:
+                change_savefile()
             if i.key == pygame.K_s:
                 show_stats()
 
