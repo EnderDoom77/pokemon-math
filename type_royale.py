@@ -157,7 +157,7 @@ while (status):
             if i.key == pygame.K_DOWN:
                 penalize_both()
             if i.key == pygame.K_r:
-                change_savefile()
+                change_savefile(session)
             if i.key == pygame.K_s:
                 show_stats()
 

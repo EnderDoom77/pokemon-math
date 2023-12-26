@@ -28,8 +28,7 @@ def save_session_data(data: Session):
 
 def get_default_savefile() -> str:
     return get_session_data().savefile
-def change_savefile():
+def change_savefile(session: Session):
     new_savefile = input("save file name: ")
-    global session
     session.savefile = new_savefile
     save_session_data(session)
