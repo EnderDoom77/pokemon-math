@@ -7,7 +7,7 @@ def filter_eligible(plist: list[Pokemon]):
     return [p for p in plist if p.image and (p.is_base or (p.is_regional and not (p.is_totem or p.is_gmax or p.is_mega or p.num <= 0)))]
 
 def savename_to_savepath(name: str):
-    return f"saves/{path}.json"
+    return f"saves/{name}.json"
 
 def load(savename) -> tuple[list[int], list[int]]:
     '''
