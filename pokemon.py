@@ -4,6 +4,8 @@ from os import path
 from typing import Literal, TypeAlias
 import re
 
+from lib.mathlib import parse_gradient
+
 PokeType = Literal["normal", "fire", "water", "grass", "electric", "ice", "rock", "fairy", "dragon", "steel", "fighting", "poison", "flying", "psychic", "ground", "bug", "ghost", "dark"]
 PokeStat = Literal["hp", "atk", "def", "spa", "spd", "spe"]
 
@@ -104,13 +106,15 @@ class Config:
         types : list[PokeType],
         type_colors : dict[PokeType, str], 
         type_effectiveness : list[list[float]],
-        stats : list[PokeStat],        
+        stats : list[PokeStat],
+        elo_gradient: dict[str,str],    
         **kwargs):
         
         self.types = types
         self.type_colors = type_colors
         self.type_effectiveness = type_effectiveness
         self.stats = stats
+        self.elo_gradient = parse_gradient(elo_gradient)
 
         self.misc : dict[str, any] = dict()
         for k,v in kwargs.items():
