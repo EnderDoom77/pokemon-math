@@ -402,3 +402,4 @@ FodyWeavers.xsd
 
 # Local user data
 **/session.json
+*.html
