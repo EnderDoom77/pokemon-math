@@ -32,3 +32,4 @@ def change_savefile(session: Session):
     new_savefile = input("save file name: ")
     session.savefile = new_savefile
     save_session_data(session)
+    

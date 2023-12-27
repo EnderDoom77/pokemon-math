@@ -7,6 +7,7 @@ eligible_list = filter_eligible(pokemon_list)
 id_to_idx = {p.id: i for i, p in enumerate(eligible_list)}
 
 session = Session().load()
+print(f"Loading data from savefile: {session.savefile}")
 elo, l_rate = load(session.savefile)
 
 def extra_info(p: Pokemon) -> str:

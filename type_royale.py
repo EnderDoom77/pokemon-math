@@ -158,6 +158,8 @@ while (status):
                 penalize_both()
             if i.key == pygame.K_r:
                 change_savefile(session)
+                elo, l_rate = load()
+                fetch_and_set_pokemon_pair()
             if i.key == pygame.K_s:
                 show_stats()
 
