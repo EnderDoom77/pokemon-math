@@ -37,7 +37,7 @@ l_rate = [400 for p in eligible_list]
 
 session: Session = Session().load()
 
-if path.exists(session.savefile):
+if path.exists(f"saves/{session.savefile}.json"):
     elo, l_rate = load(session.savefile)
 else:
     save(session.savefile, elo, l_rate)
