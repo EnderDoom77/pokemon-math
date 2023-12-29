@@ -1,9 +1,19 @@
 import os
 import pygame
-import abc
+from abc import abstractmethod, ABCMeta
 from pygame import Rect, Color, Surface
 from typing import Callable, TypeAlias, Literal
 from enum import Enum
+
+from lib.mathlib import TupleMath
+
+def rect_zero() -> Rect:
+    return (0,0,0,0)
+def rect_margin(top: float = 0, right: float = 0, bottom : float = 0, left: float = 0) -> Rect:
+    return (left, top, -left-right, -top-bottom)
+
+def default_font() -> pygame.font.Font:
+    return pygame.font.SysFont("Arial", 16, False)
 
 class ElementStatus(Enum):
     NORMAL = 0
@@ -11,6 +21,8 @@ class ElementStatus(Enum):
     PRESSED = 2
 
 Size: TypeAlias = tuple[int,int]
+Point: TypeAlias = tuple[int,int]
+RelativePoint: TypeAlias = tuple[float,float]
 
 class AxisAlignment(Enum):
     START = 0
@@ -33,40 +45,219 @@ class FullAlignment(Enum):
         return (align % 4, align // 4)
 
 class Pivot():
-    def __init__(self, pivot_point: tuple[float,float]):
-        self.pivot = pivot_point
+    def __init__(self, pivot_point: Point):
+        self.point = pivot_point
+
+    @property
+    def x(self):
+        return self.point[0]
+    @x.setter
+    def x(self, value: float):
+        self.point[0] = value
+    @property
+    def y(self):
+        return self.point[1]
+    @y.setter
+    def y(self, value: float):
+        self.point[1] = value
+
     @staticmethod
     def from_alignment(alignment: FullAlignment):
         x_align, y_align = FullAlignment.split_axes(alignment)
         return Pivot((x_align / 2, y_align / 2))
-    def align(self, container: Rect, size: Size) -> Rect:
+    def align_in_rect(self, container: Rect, size: Size) -> Rect:
         bx, by, cx, cy = container
         sx, sy = size
-        px, py = self.pivot
+        px, py = self.point
 
         pad_x = (cx - sx) * px
         pad_y = (cy - sy) * py
 
         return (bx + pad_x, by + pad_y, sx, sy)
+    
+    def backwards_align_in_rect(self, container: Rect, size: Size) -> Rect:
+        bx, by, cx, cy = container
+        sx, sy = size
+        px, py = self.point
 
-class Drawable(metaclass=abc.ABCMeta):
-    @abc.abstractmethod
+        pad_x = (cx - sx) * px
+        pad_y = (cy - sy) * py
+
+        return (bx - pad_x, by - pad_y, sx, sy)
+
+    def grow(self, point: Point, size: Size) -> Rect:
+        px, py = point
+        sx, sy = size
+        return (px - sx * self.x, py - sy * self.y, sx, sy)
+    
+    def backwards_grow(self, rect: Rect) -> Rect:
+        px, py, sx, sy = rect
+        return (px + sx * self.x, py + sy * self.y, sx, sy)
+    
+    def point_in_rect(self, rect: Rect) -> Point:
+        px, py, sx, sy = rect
+        return (px + sx * self.x, py + sy * self.y)
+    
+    def __repr__(self) -> str:
+        return f"Pivot({self.x:.0%},{self.y:.0%})"
+
+class Drawable(metaclass=ABCMeta):
+    @abstractmethod
     def render(self, surface: Surface):
         raise NotImplementedError
 
+class Anchor:
+    def __init__(self, min_anchor: RelativePoint = (0,0), max_anchor: RelativePoint = (0,0), pivot: Pivot = Pivot((0,0))):
+        self.min_anchor = min_anchor
+        self.max_anchor = max_anchor
+        self.pivot = pivot
+
+    def relative_size(self):
+        return TupleMath.sub(self.max_anchor, self.min_anchor)
+    def size(self, container_size: Size):
+        return TupleMath.mult(self.relative_size(), container_size)
+    def anchor_rect(self, container: Rect) -> Rect:
+        x,y,sx,sy = container
+        pos = (x,y)
+        sz = (sx,sy)
+        return (*TupleMath.add(pos, TupleMath.mult(sz, self.min_anchor)), *self.size(sz))
+
+    @staticmethod
+    def expand() -> "Anchor":
+        return Anchor((0,0), (1,1), Pivot((0.5, 0.5)))
+    @staticmethod
+    def from_pivot(pivot: Pivot) -> "Anchor":
+        return Anchor(pivot.point, pivot.point, pivot)
+    @staticmethod
+    def from_relative_point(x_rel,y_rel):
+        rel_point = (x_rel,y_rel)
+        return Anchor(rel_point,rel_point,Pivot(rel_point))
+
+    def get_rect(self, container: Rect, local_rect: Rect = (0,0,0,0)):
+        x_offset, y_offset, sx, sy = local_rect
+        _, _, csx, csy = container
+
+        final_size = TupleMath.add((sx,sy), self.size((csx,csy)))
+        global_pivot_point = TupleMath.add((x_offset, y_offset), self.pivot.point_in_rect(self.anchor_rect(container)))
+
+        return self.pivot.grow(global_pivot_point, final_size)
+    
+    def backwards_fit(self, container: Rect, global_rect: Rect):
+        unpivoted_rect = self.pivot.backwards_grow(global_rect)
+
+        x, y, sx, sy = unpivoted_rect
+        _, _, csx, csy = container
+
+        local_size = TupleMath.sub((sx,sy), self.size((csx,csy)))
+        local_offset = TupleMath.sub((x,y), self.pivot.point_in_rect(self.anchor_rect(container)))
+
+        return (*local_size, *local_offset)
+    
+    def __repr__(self):
+        return f"Anchor(X:{self.min_anchor[0]:.0%}-{self.max_anchor[0]:.0%},Y:{self.min_anchor[1]:.0%}-{self.max_anchor[1]:.0%};{self.pivot})"
+
 @Drawable.register
-class TextElement:
-    def __init__(self, rect: Rect, text: str, color: Color, font: pygame.font.Font, pivot: Pivot = Pivot((0.5,0.5))):
-        self.rect = rect
+class Element():
+    def __init__(self, name: str = "Unnamed Element", local_rect: Rect = (0,0,0,0), anchor: Anchor = Anchor(), parent: "Element | None" = None):
+        self._local_rect = local_rect
+        self._rect = local_rect
+        self.name = name
+        self.anchor = anchor
+        self.parent = parent
+        if parent: parent.add_child(self)
+        self.enable_render = True
+        self._children: list[Element] = []
+        self.set_rect_dirty()
+
+    def add_child(self, child: "Element"):
+        self._children.append(child)
+        child.rect_dirty = True
+        child.parent = self
+
+    def add_children(self, children: "list[Element]"):
+        for c in children:
+            self.add_child(c)
+
+    def remove_child(self, child: "Element"):
+        self._children.remove(child)
+        child.rect_dirty = True
+
+    def remove_all_children(self):
+        self._children.clear()
+        
+    def get_children(self) -> "list[Element]":
+        return self._children
+    
+    def get_child_by_name(self, name) -> "Element | None":
+        for c in self._children:
+            if c.name == name:
+                return c
+        return None
+    
+    def set_rect_dirty(self):
+        self.rect_dirty = True
+        for c in self.get_children():
+            c.set_rect_dirty()
+
+    @property
+    def local_rect(self):
+        return self._local_rect
+    @local_rect.setter
+    def local_rect(self, value: Rect):
+        self._local_rect = value
+        self.set_rect_dirty()
+
+    @property
+    def rect(self):
+        if self.rect_dirty:
+            self.recalculate()
+        return self._rect
+    @rect.setter
+    def rect(self, value: Rect):
+        if self.parent:
+            self._local_rect = self.anchor.backwards_fit(self.parent.rect, value)
+        else:
+            self._local_rect = value
+        self.set_rect_dirty()
+
+    def recalculate(self):
+        self.rect_dirty = False
+        if self.parent:
+            self._rect = self.anchor.get_rect(self.parent.rect, self.local_rect)
+        else: 
+            self._rect = self.local_rect
+
+    def render(self, screen: Surface):
+        pass
+
+    def render_as_root(self, screen: Surface):
+        if not self.enable_render: return
+        self.render(screen)
+        for c in self._children:
+            c.render_as_root(screen)
+
+    def path_to_object(self) -> str:
+        if self.parent:
+            return f"{self.parent.path_to_object()} > {self.name}"
+        return self.name
+
+    def __repr__(self):
+        return f"{self.name} [{self.__class__.__name__}]"
+
+class TextElement(Element):
+    def __init__(self, name: str, rect: Rect, text: str, color: Color = (255,255,255), font: pygame.font.Font | None = None, text_pivot: Pivot = Pivot((0.5,0.5)), anchor: Anchor = Anchor.expand(), parent: Element | None = None):
+        super().__init__(name, rect, anchor, parent)
         self._text = text
         self._color = color
-        self._font = font
-        self.pivot = pivot
-        self.dirty = True
+        self._font = font or default_font()
+        self.text_pivot = text_pivot
+        self.text_dirty = True
 
     def recompute_render(self):
+        color = Color(self.color)
         self.text_img = self.font.render(self.text, True, self.color)
-        self.dirty = False
+        self.text_img.set_alpha(color.a)
+        self.text_dirty = False
 
     @property
     def text(self):
@@ -75,7 +266,7 @@ class TextElement:
     @text.setter
     def text(self, value: str):
         self._text = value
-        self.dirty = True
+        self.text_dirty = True
 
     @property
     def color(self):
@@ -84,7 +275,7 @@ class TextElement:
     @color.setter
     def color(self, value: Color):
         self._color = value
-        self.dirty = True
+        self.text_dirty = True
         
     @property
     def font(self):
@@ -93,44 +284,35 @@ class TextElement:
     @font.setter
     def font(self, value: pygame.font.Font):
         self._font = value
-        self.dirty = True
+        self.text_dirty = True
 
     def render(self, surface: Surface):
-        if self.dirty:
+        if self.text_dirty:
             self.recompute_render()
         size = self.text_img.get_size()
-        rect = self.pivot.align(self.rect, size)
-        surface.blit(self.text_img, rect)
+        text_rect = self.text_pivot.grow(self.text_pivot.point_in_rect(self.rect), size)
+        surface.blit(self.text_img, text_rect)
 
-@Drawable.register
-class RectElement:
-    def __init__(self, rect: Rect, color: Color | None = None, border_radius: int = -1, text: TextElement | None = None):
-        self._rect = rect
+class RectElement(Element):
+    def __init__(self, name: str, rect: Rect, anchor: Anchor = Anchor(), color: Color | None = None, border_radius: int = -1, text: TextElement | None = None, parent: Element | None = None):
+        super().__init__(name, rect, anchor, parent)
         self.status = ElementStatus.NORMAL
         self.color = color
         self.border_radius = border_radius
         self.text = text
+        if text: self.add_child(text)
 
-    @property
-    def rect(self):
-        return self._rect
-    @rect.setter
-    def rect(self, value: Rect):
-        self._rect = value
-        if self.text: self.text.rect = value
-
-    def hovered(self, mouse_pos: tuple[float,float]):
+    def hovered(self, mouse_pos: Point):
         x,y,sx,sy = self.rect
         mx,my = mouse_pos
 
         return mx > x and my > y and mx <= x + sx and my <= y + sy
 
     def add_text(self, text: str, font: pygame.font.Font, color: Color = (0,0,0), pivot: Pivot = Pivot((0.5,0.5))):
-        self.text = TextElement(self.rect, text, color, font, pivot)
+        self.text = TextElement("Text", rect_zero(), text, color, font, pivot, parent=self)
 
     def render(self, surface: Surface):
-        if self.color: pygame.draw.rect(surface, self.color, self.rect)
-        if self.text: self.text.render(surface)
+        if self.color: pygame.draw.rect(surface, self.color, self.rect, border_radius=self.border_radius)
 
 class ColorBlock:
     def __init__(self, color_base, color_hover: Color | None = None, color_pressed: Color | None = None):
@@ -147,8 +329,8 @@ class ColorBlock:
             return self.color_pressed
 
 class InteractiveElement(RectElement):
-    def __init__(self, rect: Rect, colors: ColorBlock | None = None, border_radius: int = -1, text: TextElement | None = None):
-        super().__init__(rect, None, border_radius, text)
+    def __init__(self, name: str, rect: Rect, anchor: Anchor = Anchor(), colors: ColorBlock | None = None, border_radius: int = -1, text: TextElement | None = None, parent: Element | None = None):
+        super().__init__(name, rect, anchor, None, border_radius, text, parent)
         self.colors = colors
         self.on_press: list[Callable] = []
         self.on_unpress: list[Callable] = []
@@ -197,21 +379,20 @@ class InteractiveElement(RectElement):
             self.status = ElementStatus.HOVER
 
 class Sprite(RectElement):
-    def __init__(self, rect: Rect, img_path: str, size: Size | None = None, pivot: Pivot = Pivot((0.5,0.5))):
-        super().__init__(rect, None, -1, None)
+    def __init__(self, name: str, rect: Rect, img_path: str, anchor: Anchor = Anchor(), parent: Element | None = None):
+        super().__init__(name, rect, anchor, parent = parent)
         self._img_path = img_path
-        self._size = size
-        self.pivot = pivot
-        self.dirty = True
+        self.sprite_dirty = True
         self.img = None
 
     def reload_img(self):
+        self.sprite_dirty = False
         if not os.path.exists(self.img_path):
             self.img = None
             return
         img = pygame.image.load(self.img_path).convert()
-        self.img = pygame.transform.scale(img, self.size)
-        self.dirty = False
+        x,y, *size = self.rect
+        self.img = pygame.transform.scale(img, size)
 
     @property
     def img_path(self):
@@ -219,28 +400,17 @@ class Sprite(RectElement):
     @img_path.setter
     def img_path(self, value: str):
         self._img_path = value
-        self.dirty = True
+        self.sprite_dirty = True
 
     @property
     def rect(self):
-        return self._rect
+        return super().rect
     @rect.setter
     def rect(self, value: Rect):
-        self._rect = value
-        self.dirty = True
-        if self.text: self.text.rect = value
-        
-    @property
-    def size(self):
-        if self._size: return self._size
-        x,y,sx,sy = self.rect
-        return (sx,sy)
-    @size.setter
-    def size(self, value: Size):
-        self._size = value
-        self.dirty = True
+        super().rect = value
+        self.sprite_dirty = True
 
     def render(self, surface: Surface):
-        if self.dirty:
+        if self.sprite_dirty:
             self.reload_img()
-        if self.img: surface.blit(self.img, self.pivot.align(self.rect, self.size))
+        if self.img: surface.blit(self.img, self.rect)

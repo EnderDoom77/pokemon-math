@@ -4,9 +4,11 @@ import math
 from os import path
 from random import Random
 import pygame
-from lib.mathlib import lerp
+from pygame import Color
+from lib.mathlib import calc_elo_delta, clamp01, lerp
 from lib.ui.button import Button
-from lib.ui.ui_base import ColorBlock, Drawable, Sprite, TextElement
+from lib.ui.pokemon_display import PokemonDisplay
+from lib.ui.ui_base import Anchor, ColorBlock, Drawable, Element, Pivot, Sprite, TextElement, rect_zero
 
 from pokemon import Pokemon, read_config, read_pokemon
 from lib.royalelib import *
@@ -15,29 +17,54 @@ from session.session import Session
 # activate the pygame library .
 pygame.init()
 X = 1200
-Y = 650
+Y = 800
 IMG_SIZE = 300
 IMG_MARGIN = 50
 BTN_BORDER_RADIUS = 8
-BTN_BASELINE = 550
+BTN_BASELINE = Y - 100
 BTN_SPACING = 10
 BTN_SIZE = 80
+PROMO_BTN_WIDTH = 150
 
-LEFT_IMG_X = X/2 - IMG_MARGIN * 2- IMG_SIZE
-RIGHT_IMG_X = X/2 + IMG_MARGIN * 2
+DISPLAY_CENTER_OFFSET = PROMO_BTN_WIDTH / 2 + IMG_MARGIN
+
+ELO_DELTA_DISPLAY_TIME = 2.5
  
 # create the display surface object
 # of specific dimension..e(X, Y).
 scrn = pygame.display.set_mode((X, Y))
+root = Element("Root", (0,0,X,Y))
  
 # set the pygame window name
 pygame.display.set_caption('Pokemon Royale')
 
 font = pygame.font.Font('fonts/rubik/static/Rubik-Regular.ttf', 32)
+large_font = pygame.font.Font('fonts/rubik/static/Rubik-Regular.ttf', 56)
 
 buttons: list[Button] = []
-renderables: list[Drawable] = []
- 
+screens: dict[str, Element] = {}
+screens["royale"] = Element("Royale Screen", rect_zero(), Anchor.expand(), root)
+screens["leaderboard"] = Element("Leaderboard Screen", rect_zero(), Anchor.expand(), root)
+
+current_screen = "royale"
+def set_screen(screen_name):
+    global current_screen
+    screens[current_screen].enable_render = False
+    current_screen = screen_name
+    screens[current_screen].enable_render = True
+
+TAB_MARGINS = 3
+TAB_SIZE = 200
+scr_btn_x = TAB_MARGINS
+tab_selector = Element("Tab Selector", (0,0,0,IMG_MARGIN), Anchor((0,0),(1,0),Pivot((0.5,0))),root)
+tab_colorblock = ColorBlock((255,255,255),(200,200,200),(175,175,175))
+for screen_name, screen in screens.items():
+    btn = Button(f"{screen_name} Screen Selector", (scr_btn_x,0,TAB_SIZE,-2*TAB_MARGINS), Anchor((0,0),(0,1),Pivot((0,0.5))), colors=tab_colorblock, border_radius=5, parent=tab_selector)
+    btn.add_text(screen_name.capitalize(), font)
+    btn.on_click.append(lambda screen_name=screen_name: set_screen(screen_name))
+    buttons.append(btn)
+    scr_btn_x += TAB_SIZE + TAB_MARGINS * 2
+
 weights = defaultdict(float)
 config = read_config()
 
@@ -46,11 +73,16 @@ eligible_list = filter_eligible(pokemon_list)
 matchups : dict[int, set[int]] = defaultdict(set)
 
 id_to_index = dict()
-for i,p in enumerate(eligible_list):
-    id_to_index[p.id] = i
+for event,p in enumerate(eligible_list):
+    id_to_index[p.id] = event
 
-elo = [500 for p in eligible_list]
-l_rate = [400 for p in eligible_list]
+DEFAULT_ELO = 500
+DEFAULT_K_VALUE = 400
+elo = [DEFAULT_ELO for p in eligible_list]
+l_rate = [DEFAULT_K_VALUE for p in eligible_list]
+L_RATE_DECAY = 0.95
+L_RATE_MIN = 50
+ELO_MIN = 100
 
 session: Session = Session().load()
 
@@ -58,6 +90,8 @@ if savefile_exists(session.savefile):
     elo, l_rate = load(session.savefile)
 else:
     save(session.savefile, elo, l_rate)
+
+original_elo = elo.copy()
 
 rng = Random()
 
@@ -67,9 +101,22 @@ def match_weight_by_elo_delta(elo_delta: float) -> int:
     nonlinear_p = pow(linear_p, 1.25)
     return int(500 * nonlinear_p)
 
+def get_pokemon_matchup_weight(pokemon: Pokemon) -> int:
+    idx = id_to_index[pokemon.id]
+
+    p_elo = elo[idx]
+    l_rate = elo[idx]
+    exponent = 1.4 # default elo weight exponent
+    if l_rate >= DEFAULT_K_VALUE: # never competed
+        exponent = 2.5 # we really want to show this pokemon!
+    if p_elo <= ELO_MIN:
+        exponent = 0.8 # This pokemon has a very bad track record, we should not show it
+    
+    return int(math.pow(p_elo, exponent) * (l_rate / DEFAULT_K_VALUE))
+
 def fetch_pokemon_pair() -> tuple[Pokemon, Pokemon]:
-    main = rng.sample(eligible_list, 1, counts=elo)[0]
-    main_index = eligible_list.index(main)
+    main = rng.sample(eligible_list, 1, counts=[get_pokemon_matchup_weight(p) for p in eligible_list])[0]
+    main_index = id_to_index[main.id]
     main_elo = elo[main_index]
     counts = [0 if i == main_index or i in matchups[main_index]
         else match_weight_by_elo_delta(elo_val - main_elo) for i,elo_val in enumerate(elo)
@@ -80,25 +127,34 @@ def fetch_pokemon_pair() -> tuple[Pokemon, Pokemon]:
     return main, alt
     
 left_pokemon, right_pokemon = fetch_pokemon_pair()
+left_elo_delta, right_elo_delta = 0,0
+elo_delta_timer = 0
 
-left_sprite = Sprite((LEFT_IMG_X, IMG_MARGIN, IMG_SIZE, IMG_SIZE), left_pokemon.image)
-right_sprite = Sprite((RIGHT_IMG_X, IMG_MARGIN, IMG_SIZE, IMG_SIZE), right_pokemon.image)
-left_name = TextElement((LEFT_IMG_X, IMG_MARGIN * 2 + IMG_SIZE, IMG_SIZE, IMG_MARGIN), "", (255,255,255), font)
-right_name = TextElement((RIGHT_IMG_X, IMG_MARGIN * 2 + IMG_SIZE, IMG_SIZE, IMG_MARGIN), "", (255,255,255), font)
-left_elo = TextElement((LEFT_IMG_X, IMG_MARGIN * 3 + IMG_SIZE, IMG_SIZE, IMG_MARGIN), "", (255,255,255), font)
-right_elo = TextElement((RIGHT_IMG_X, IMG_MARGIN * 3 + IMG_SIZE, IMG_SIZE, IMG_MARGIN), "", (255,255,255), font)
+POKE_DISPLAY_BG_COLOR = Color(10,10,10)
+left_display = PokemonDisplay("Left Display", (-DISPLAY_CENTER_OFFSET, IMG_MARGIN, 2 * IMG_MARGIN + IMG_SIZE, IMG_SIZE + 5 * IMG_MARGIN), Anchor((0.5,0),(0.5,0),pivot=Pivot((1,0))), left_pokemon, POKE_DISPLAY_BG_COLOR, border_radius=IMG_MARGIN, font=font, config=config, parent=screens["royale"])
+right_display = PokemonDisplay("Right Display", (DISPLAY_CENTER_OFFSET, IMG_MARGIN, 2 * IMG_MARGIN + IMG_SIZE, IMG_SIZE + 5 * IMG_MARGIN), Anchor((0.5,0),(0.5,0),pivot=Pivot((0,0))), right_pokemon, POKE_DISPLAY_BG_COLOR, border_radius=IMG_MARGIN, font=font, config=config, parent=screens["royale"])
+
+texts: list[TextElement] = []
+for display in [left_display, right_display]:
+    display.add_image_display((0,IMG_MARGIN,IMG_SIZE,IMG_SIZE), Anchor((0.5,0),(0.5,0),Pivot((0.5,0))))
+    info_anchor = Anchor((0,1),(1,1),Pivot((0.5,1)))
+    display.add_name_display((0,-2.5 * IMG_MARGIN,0,IMG_MARGIN), info_anchor, text_color=(255,255,255))
+    display.add_type_display((0,-1.5 * IMG_MARGIN,0,IMG_MARGIN), info_anchor)
+    texts.append(TextElement("Elo Display", (0,-0.5 * IMG_MARGIN,0,IMG_MARGIN), "", color=(255,255,255), anchor=Anchor((0,1),(1,1),Pivot((0.5,1))), font=font, parent=display))
+left_elo_text = texts[0]
+right_elo_text = texts[1]
+left_elo_delta_text = TextElement("Left Elo Delta" , ( 25,-25,0,0), "(0)", (150,150,150,0), large_font, Pivot((0,1)), Anchor.from_relative_point(0,1),screens["royale"])
+right_elo_delta_text = TextElement("Right Elo Delta", (-25,-25,0,0), "(0)", (150,150,150,0), large_font, Pivot((1,1)), Anchor.from_relative_point(1,1),screens["royale"])
 
 def set_pokemon_pair(p1: Pokemon, p2: Pokemon):
-    left_sprite.img_path = p1.image
-    right_sprite.img_path = p2.image
-    left_name.text = p1.name
-    right_name.text = p2.name
+    left_display.pokemon = p1
+    right_display.pokemon = p2
     elo_left = elo[id_to_index[p1.id]]
-    left_elo.text = f"{elo_left}"
-    left_elo.color = config.elo_gradient.eval(elo_left)
+    left_elo_text.text = f"{elo_left}"
+    left_elo_text.color = config.elo_gradient.eval(elo_left)
     elo_right = elo[id_to_index[p2.id]]
-    right_elo.text = f"{elo_right}"
-    right_elo.color = config.elo_gradient.eval(elo_right)
+    right_elo_text.text = f"{elo_right}"
+    right_elo_text.color = config.elo_gradient.eval(elo_right)
 
     idx1 = id_to_index[p1.id]
     idx2 = id_to_index[p2.id]
@@ -110,34 +166,31 @@ def fetch_and_set_pokemon_pair():
     global right_pokemon
     left_pokemon, right_pokemon = fetch_pokemon_pair()
     set_pokemon_pair(left_pokemon, right_pokemon)
-
-l_rate_decay = 0.95
-l_rate_min = 50
-elo_min = 100
+    global elo_delta_timer
+    elo_delta_timer = ELO_DELTA_DISPLAY_TIME
 
 def evaluate_matchup(score: float):
     print(f"Evaluating {left_pokemon.name} vs {right_pokemon.name} [S={score:.2f}]")
     choose(left_pokemon, right_pokemon, score)
 
 def choose(p1: Pokemon, p2: Pokemon, score):
-    idx_w = id_to_index[p1.id]
-    idx_l = id_to_index[p2.id]
+    idx_left = id_to_index[p1.id]
+    idx_right = id_to_index[p2.id]
     
-    elo_w = elo[idx_w]
-    elo_l = elo[idx_l]
-    k_w = l_rate[idx_w]
-    k_l = l_rate[idx_l]
-    q_w = math.pow(10, elo_w/400)
-    q_l = math.pow(10, elo_l/400)
+    elo_left = elo[idx_left]
+    elo_right = elo[idx_right]
+    k_left = l_rate[idx_left]
+    k_right = l_rate[idx_right]
     
-    expected_score = q_w/(q_w + q_l)
-    delta_w = k_w * (score - expected_score)
-    delta_l = k_l * (expected_score - score)
+    global left_elo_delta
+    global right_elo_delta
+    left_elo_delta = calc_elo_delta(elo_left, elo_right, k_left, score)
+    right_elo_delta = calc_elo_delta(elo_right, elo_left, k_right, 1-score)
 
-    elo[idx_w] = max(elo_min, elo_w + int(delta_w))
-    elo[idx_l] = max(elo_min, elo_l + int(delta_l))
-    l_rate[idx_w] = max(l_rate_min, int(k_w * l_rate_decay))
-    l_rate[idx_l] = max(l_rate_min, int(k_l * l_rate_decay))
+    elo[idx_left] = max(ELO_MIN, elo_left + left_elo_delta)
+    elo[idx_right] = max(ELO_MIN, elo_right + right_elo_delta)
+    l_rate[idx_left] = max(L_RATE_MIN, int(k_left * L_RATE_DECAY))
+    l_rate[idx_right] = max(L_RATE_MIN, int(k_right * L_RATE_DECAY))
     save(session.savefile, elo, l_rate)
     fetch_and_set_pokemon_pair()
 
@@ -145,10 +198,17 @@ def modify_both(p1: Pokemon, p2: Pokemon, result: float):
     idx_w = id_to_index[p1.id]
     idx_l = id_to_index[p2.id]
 
+    deltas = []
     for idx in (idx_w, idx_l):
-        delta = result * l_rate[idx] / 2
-        elo[idx] = max(elo_min, elo[idx] + int(delta))
-        l_rate[idx] = max(l_rate_min, int(l_rate[idx] * l_rate_decay))
+        k = l_rate[idx]
+        delta = calc_elo_delta(elo[idx], DEFAULT_ELO, k, result)
+        deltas.append(delta)
+        elo[idx] = max(ELO_MIN, elo[idx] + delta)
+        l_rate[idx] = max(L_RATE_MIN, int(l_rate[idx] * L_RATE_DECAY))
+
+    global left_elo_delta
+    global right_elo_delta
+    left_elo_delta, right_elo_delta = tuple(deltas)
 
     save(session.savefile, elo, l_rate)
     fetch_and_set_pokemon_pair()
@@ -156,7 +216,7 @@ def modify_both(p1: Pokemon, p2: Pokemon, result: float):
 def boost_both():
     modify_both(left_pokemon, right_pokemon, 1)
 def penalize_both():
-    modify_both(left_pokemon, right_pokemon, -1)
+    modify_both(left_pokemon, right_pokemon, 0)
 
 def show_stats():
     tagged_scores = [(score, p.name) for score, p in zip(elo, eligible_list)]
@@ -185,67 +245,84 @@ def value_to_colorblock(v:float) -> ColorBlock:
         lerp((255,100,100),(100,100,255), v), 
         lerp((200,0,0), (0,0,200), v)
     )
-
+def update_deltas(text: TextElement, elo_delta: int, elo_delta_timer: float):
+    new_str = f"({'+' if elo_delta > 0 else ''}{elo_delta})"
+    alpha = math.floor(clamp01(elo_delta_timer / 0.5) * 255)
+    new_col = (
+        (150,150,150,alpha) if elo_delta == 0 else
+        (0  ,255,0  ,alpha) if elo_delta >  0 else
+        (255,0  ,0  ,alpha)
+    )
+    text.text = new_str
+    text.color = new_col
 btn_cnt = len(scores)
 btns_size_x = btn_cnt * BTN_SIZE + (btn_cnt - 1) * BTN_SPACING
-for i, v in enumerate(score_values):
-    new_rect = ((X + BTN_SPACING - btns_size_x) / 2 + (i * btns_size_x / btn_cnt), BTN_BASELINE - BTN_SIZE / 2, BTN_SIZE, BTN_SIZE)
-    btn = Button(new_rect, value_to_colorblock(v), BTN_BORDER_RADIUS)
+for event, v in enumerate(score_values):
+    new_rect = ((X + BTN_SPACING - btns_size_x) / 2 + (event * btns_size_x / btn_cnt), BTN_BASELINE - BTN_SIZE / 2, BTN_SIZE, BTN_SIZE)
+    btn = Button(f"Button {v}", new_rect, colors=value_to_colorblock(v), border_radius=BTN_BORDER_RADIUS, parent=screens["royale"])
     display_value = v * 2 - 1
     btn.add_text(f"{'+' if display_value > 0 else ''}{display_value:.1f}", font)
     score_delta = 1 - v
     btn.on_click.append(lambda delta=score_delta: evaluate_matchup(delta))
     buttons.append(btn)
-PROMO_BTN_WIDTH = 150
-up_btn = Button((X / 2 - PROMO_BTN_WIDTH / 2, IMG_MARGIN * 2, PROMO_BTN_WIDTH, BTN_SIZE), ColorBlock((200,200,200),(180,180,180),(150,150,150)), BTN_BORDER_RADIUS)
+up_btn = Button("Promote Button", (X / 2 - PROMO_BTN_WIDTH / 2, IMG_MARGIN * 2, PROMO_BTN_WIDTH, BTN_SIZE), colors=ColorBlock((200,200,200),(180,180,180),(150,150,150)), border_radius=BTN_BORDER_RADIUS, parent=screens["royale"])
 up_btn.add_text("Promote", font, (0,0,0))
 up_btn.on_click.append(boost_both)
-down_btn = Button((X / 2 - PROMO_BTN_WIDTH / 2, IMG_SIZE, PROMO_BTN_WIDTH, BTN_SIZE), ColorBlock((55,55,55),(75,75,75),(105,105,105)), BTN_BORDER_RADIUS)
+down_btn = Button("Demote Button", (X / 2 - PROMO_BTN_WIDTH / 2, IMG_SIZE, PROMO_BTN_WIDTH, BTN_SIZE), colors=ColorBlock((55,55,55),(75,75,75),(105,105,105)), border_radius=BTN_BORDER_RADIUS, parent=screens["royale"])
 down_btn.add_text("Demote", font, (255,255,255))
 down_btn.on_click.append(penalize_both)
 buttons.extend([up_btn,down_btn])
 
-renderables.extend(buttons)
-renderables.extend([left_sprite, right_sprite, left_name, right_name, left_elo, right_elo])
 set_pokemon_pair(left_pokemon, right_pokemon)
 
+def scroll(delta_y):
+    pass
+
+clock = pygame.time.Clock()
 while (status):
     # iterate over the list of Event objects
     # that was returned by pygame.event.get() method.
     scrn.fill((0,0,0))
+    delta_time = clock.tick() / 1000
  
     mouse_pos = pygame.mouse.get_pos()
     for btn in buttons:
         btn.onmousemoved(mouse_pos)
-    for i in pygame.event.get():
+    for event in pygame.event.get():
         # if event object type is QUIT
         # then quitting the pygame
         # and program both.
-        if i.type == pygame.QUIT:
+        if event.type == pygame.QUIT:
             status = False
-        if i.type == pygame.MOUSEBUTTONDOWN:
+        if event.type == pygame.MOUSEBUTTONDOWN:
             for btn in buttons:
                 btn.onmousedown(mouse_pos)
-        if i.type == pygame.MOUSEBUTTONUP:
+        if event.type == pygame.MOUSEBUTTONUP:
             for btn in buttons:
                 btn.onmouseup(mouse_pos)
-        if i.type == pygame.KEYDOWN:
+        if event.type == pygame.MOUSEWHEEL:
+            scroll(event.y)
+        if event.type == pygame.KEYDOWN:
             for k, s in scores.items():
-                if i.key == k:
+                if event.key == k:
                     choose(left_pokemon, right_pokemon, 1 - s)
-            if i.key == pygame.K_UP:
+            if event.key == pygame.K_UP:
                 boost_both()
-            if i.key == pygame.K_DOWN:
+            if event.key == pygame.K_DOWN:
                 penalize_both()
-            if i.key == pygame.K_r:
+            if event.key == pygame.K_r:
                 change_savefile(session)
                 elo, l_rate = load()
                 fetch_and_set_pokemon_pair()
-            if i.key == pygame.K_s:
+            if event.key == pygame.K_s:
                 show_stats()
 
-    for r in renderables:
-        r.render(scrn)
+    if elo_delta_timer > 0:
+        elo_delta_timer -= delta_time
+        update_deltas(left_elo_delta_text, left_elo_delta, elo_delta_timer)
+        update_deltas(right_elo_delta_text, right_elo_delta, elo_delta_timer)
+
+    root.render_as_root(scrn)
 
     pygame.display.update()
  
