@@ -105,14 +105,14 @@ def get_pokemon_matchup_weight(pokemon: Pokemon) -> int:
     idx = id_to_index[pokemon.id]
 
     p_elo = elo[idx]
-    l_rate = elo[idx]
+    p_k_value = l_rate[idx]
     exponent = 1.4 # default elo weight exponent
-    if l_rate >= DEFAULT_K_VALUE: # never competed
+    if p_k_value >= DEFAULT_K_VALUE: # never competed
         exponent = 2.5 # we really want to show this pokemon!
     if p_elo <= ELO_MIN:
         exponent = 0.8 # This pokemon has a very bad track record, we should not show it
     
-    return int(math.pow(p_elo, exponent) * (l_rate / DEFAULT_K_VALUE))
+    return int(math.pow(p_elo, exponent) * (p_k_value / DEFAULT_K_VALUE))
 
 def fetch_pokemon_pair() -> tuple[Pokemon, Pokemon]:
     main = rng.sample(eligible_list, 1, counts=[get_pokemon_matchup_weight(p) for p in eligible_list])[0]
