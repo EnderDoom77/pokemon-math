@@ -118,7 +118,7 @@ def get_pokemon_matchup_weight(pokemon: Pokemon) -> int:
 
     p_elo = elo[idx]
     p_k_value = l_rate[idx]
-    exponent = 1.4 # default elo weight exponent
+    exponent = 1.2 # default elo weight exponent
     if p_k_value >= DEFAULT_K_VALUE: # never competed
         exponent = 2.5 # we really want to show this pokemon!
     if p_elo <= ELO_MIN:
