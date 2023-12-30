@@ -166,6 +166,7 @@ class Element():
         self.parent = parent
         if parent: parent.add_child(self)
         self.enable_render = True
+        self.enable_culling = True
         self._children: list[Element] = []
         self.set_rect_dirty()
 
@@ -198,6 +199,20 @@ class Element():
         self.rect_dirty = True
         for c in self.get_children():
             c.set_rect_dirty()
+
+    def send_to_back(self):
+        if not self.parent: return
+        self.parent.remove_child(self)
+        self.parent._children.insert(0, self)
+    
+    def send_to_front(self):
+        if not self.parent: return
+        self.parent.remove_child(self)
+        self.parent.add_child(self)
+
+    def translate(self, delta_x, delta_y):
+        x,y,sx,sy = self.local_rect
+        self.local_rect = (x+delta_x, y+delta_y, sx, sy)
 
     @property
     def local_rect(self):
@@ -232,6 +247,7 @@ class Element():
 
     def render_as_root(self, screen: Surface):
         if not self.enable_render: return
+        if self.enable_culling and not Rect(self.rect).colliderect(screen.get_rect()): return
         self.render(screen)
         for c in self._children:
             c.render_as_root(screen)

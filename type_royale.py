@@ -3,9 +3,10 @@ from collections import defaultdict
 import math
 from os import path
 from random import Random
+from typing import Callable
 import pygame
 from pygame import Color
-from lib.mathlib import calc_elo_delta, clamp01, lerp
+from lib.mathlib import calc_elo_delta, clamp01, lerp, signed
 from lib.ui.button import Button
 from lib.ui.pokemon_display import PokemonDisplay
 from lib.ui.ui_base import Anchor, ColorBlock, Drawable, Element, Pivot, Sprite, TextElement, rect_zero
@@ -13,7 +14,14 @@ from lib.ui.ui_base import Anchor, ColorBlock, Drawable, Element, Pivot, Sprite,
 from pokemon import Pokemon, read_config, read_pokemon
 from lib.royalelib import *
 from session.session import Session
- 
+
+def color_from_sign(value: float | int, alpha = 255) -> Color:
+    return (
+        (150,150,150,alpha) if value == 0 else
+        (0  ,255,0  ,alpha) if value >  0 else
+        (255,0  ,0  ,alpha)
+    )
+
 # activate the pygame library .
 pygame.init()
 X = 1200
@@ -46,12 +54,16 @@ screens: dict[str, Element] = {}
 screens["royale"] = Element("Royale Screen", rect_zero(), Anchor.expand(), root)
 screens["leaderboard"] = Element("Leaderboard Screen", rect_zero(), Anchor.expand(), root)
 
+for s in screens.values():
+    s.enable_render = False
+
 current_screen = "royale"
 def set_screen(screen_name):
     global current_screen
     screens[current_screen].enable_render = False
     current_screen = screen_name
     screens[current_screen].enable_render = True
+set_screen(current_screen)
 
 TAB_MARGINS = 3
 TAB_SIZE = 200
@@ -105,14 +117,14 @@ def get_pokemon_matchup_weight(pokemon: Pokemon) -> int:
     idx = id_to_index[pokemon.id]
 
     p_elo = elo[idx]
-    l_rate = elo[idx]
+    p_k_value = l_rate[idx]
     exponent = 1.4 # default elo weight exponent
-    if l_rate >= DEFAULT_K_VALUE: # never competed
+    if p_k_value >= DEFAULT_K_VALUE: # never competed
         exponent = 2.5 # we really want to show this pokemon!
     if p_elo <= ELO_MIN:
         exponent = 0.8 # This pokemon has a very bad track record, we should not show it
     
-    return int(math.pow(p_elo, exponent) * (l_rate / DEFAULT_K_VALUE))
+    return int(math.pow(p_elo, exponent) * (p_k_value / DEFAULT_K_VALUE))
 
 def fetch_pokemon_pair() -> tuple[Pokemon, Pokemon]:
     main = rng.sample(eligible_list, 1, counts=[get_pokemon_matchup_weight(p) for p in eligible_list])[0]
@@ -145,6 +157,8 @@ left_elo_text = texts[0]
 right_elo_text = texts[1]
 left_elo_delta_text = TextElement("Left Elo Delta" , ( 25,-25,0,0), "(0)", (150,150,150,0), large_font, Pivot((0,1)), Anchor.from_relative_point(0,1),screens["royale"])
 right_elo_delta_text = TextElement("Right Elo Delta", (-25,-25,0,0), "(0)", (150,150,150,0), large_font, Pivot((1,1)), Anchor.from_relative_point(1,1),screens["royale"])
+left_elo_delta_text.enable_culling = False
+right_elo_delta_text.enable_culling = False
 
 def set_pokemon_pair(p1: Pokemon, p2: Pokemon):
     left_display.pokemon = p1
@@ -222,6 +236,81 @@ def show_stats():
     tagged_scores = [(score, p.name) for score, p in zip(elo, eligible_list)]
     print(sorted(tagged_scores, reverse=True))
 
+LEADERBOARD_ITEM_MARGIN = 5
+LEADERBOARD_ITEM_HEIGHT = 120
+LEADERBOARD_POKE_IMG_SIZE = LEADERBOARD_ITEM_HEIGHT - 6
+NAME_AND_TYPE_WIDTH = 450
+ELO_AND_DELTA_WIDTH = 150
+LEADERBOARD_ITEM_BG_COLOR = (20,20,20)
+class LeaderboardItem():
+    def __init__(self, index: int, pokemon: Pokemon, parent: Element | None = None):
+        self.poke_display = PokemonDisplay(f"Leaderboard Item #{index}", 
+            (0,LEADERBOARD_ITEM_MARGIN + index * (LEADERBOARD_ITEM_HEIGHT + LEADERBOARD_ITEM_MARGIN), -2 * LEADERBOARD_ITEM_MARGIN, LEADERBOARD_ITEM_HEIGHT), 
+            Anchor((0,0),(1,0),Pivot((0.5,0))), pokemon, LEADERBOARD_ITEM_BG_COLOR, LEADERBOARD_ITEM_MARGIN, font, config, parent
+        )
+        self.rank_display = TextElement("Rank Display", (25,0,100,0), f"#{index}", (255,255,255), font, Pivot((0,0.5)), Anchor((0,0),(0,1),Pivot((0,0.5))), self.poke_display)
+        left = 135
+        self.poke_display.add_image_display((left, 0, LEADERBOARD_POKE_IMG_SIZE, LEADERBOARD_POKE_IMG_SIZE), Anchor.from_relative_point(0,0.5))
+        left += LEADERBOARD_POKE_IMG_SIZE
+        self.poke_display.add_name_display((left, 0, NAME_AND_TYPE_WIDTH, 0), Anchor((0,0),(0,0.5),Pivot((0,0.5))), Pivot((0,0.5)),(255,255,255))
+        self.poke_display.add_type_display((left, 0, NAME_AND_TYPE_WIDTH, 45), Anchor((0,0.75),(0,0.75),Pivot((0,0.5))))
+        left += NAME_AND_TYPE_WIDTH + 10
+        self.elo_display = TextElement("Elo Display", (left, 0, ELO_AND_DELTA_WIDTH, 0), "-1", (255,255,255), font, Pivot((0.5,0.5)), Anchor((0,0),(0,0.5),Pivot((0,0.5))), parent=self.poke_display)
+        self.elo_delta_display = TextElement("Elo Delta Display", (left, 0, ELO_AND_DELTA_WIDTH, 0), "(0)", (255,255,255), font, Pivot((0.5,0.5)), Anchor((0,0.5),(0,1),Pivot((0,0.5))),parent=self.poke_display)
+    
+    def get_elo_and_delta(self) -> tuple[int, int]:
+        idx = id_to_index[self.poke_display.pokemon.id]
+        elo_val = elo[idx]
+        elo_delta = elo_val - original_elo[idx]
+        return (elo_val, elo_delta)
+
+    def set_pokemon(self, pokemon: Pokemon, index: int):
+        self.poke_display.pokemon = pokemon
+        self.rank_display.text = f"#{index+1}"
+        idx = id_to_index[pokemon.id]
+        elo_v, elo_d = self.get_elo_and_delta()
+        elo_color = config.elo_gradient.eval(elo_v)
+        self.elo_display.text = f"ELO: {elo[idx]}"
+        self.elo_display.color = elo_color
+        self.elo_delta_display.text = f"({signed(elo_d)})"
+        self.elo_delta_display.color = color_from_sign(elo_d)
+
+leaderboard_items: list[LeaderboardItem] = []    
+leaderboard_container = Element("Leaderboard", (10, IMG_MARGIN * 2, -210, 0), Anchor((0,0),(1,0),Pivot((0,0))), screens["leaderboard"])
+leaderboard_container.enable_culling = False
+def set_leaderboard(pokemons: list[Pokemon]):
+    for i,p in enumerate(pokemons):
+        if i >= len(leaderboard_items):
+            leaderboard_items.append(LeaderboardItem(i, p, leaderboard_container))
+        leaderboard_items[i].set_pokemon(p, i)
+            
+set_leaderboard(eligible_list)
+leaderboard_buttons: list[Button] = []
+leaderboard_controls = Element("Leaderboard Selector", (0, 1.5 * IMG_MARGIN, -2 * TAB_MARGINS, IMG_MARGIN - 2 * TAB_MARGINS), Anchor((0,0),(1,0),Pivot((0.5,0.5))),parent=screens["leaderboard"])
+left_x = TAB_MARGINS
+def sort_leaderboard(key: Callable[[Pokemon],any], reverse: bool = False):
+    new_list = sorted(eligible_list, key=key, reverse=reverse)
+    set_leaderboard(new_list)
+
+def abs_elo_delta_from_original(p: Pokemon):
+    idx = id_to_index[p.id]
+    return abs(elo[idx] - original_elo[idx])
+
+left = 0
+for btn_name, func in [
+    ("Pokedex #", lambda p:p.num),
+    ("Name", lambda p:p.name),
+    ("Elo", lambda p:-elo[id_to_index[p.id]]),
+    ("Elo Delta", lambda p: -abs_elo_delta_from_original(p))
+]:
+    btn = Button(f"Leaderboard Sort By {btn_name} Button", (left, 0, TAB_SIZE, 0), Anchor((0,0),(0,1),Pivot((0,0.5))), tab_colorblock, TAB_MARGINS, parent=leaderboard_controls)
+    btn.add_text(btn_name, font)
+    btn.on_click.append(lambda f=func: sort_leaderboard(f))
+    left += TAB_SIZE + TAB_MARGINS
+    leaderboard_buttons.append(btn)
+
+buttons.extend(leaderboard_buttons)
+
 # paint screen one time
 pygame.display.flip()
 status = True
@@ -246,15 +335,10 @@ def value_to_colorblock(v:float) -> ColorBlock:
         lerp((200,0,0), (0,0,200), v)
     )
 def update_deltas(text: TextElement, elo_delta: int, elo_delta_timer: float):
-    new_str = f"({'+' if elo_delta > 0 else ''}{elo_delta})"
+    new_str = f"({signed(elo_delta)})"
     alpha = math.floor(clamp01(elo_delta_timer / 0.5) * 255)
-    new_col = (
-        (150,150,150,alpha) if elo_delta == 0 else
-        (0  ,255,0  ,alpha) if elo_delta >  0 else
-        (255,0  ,0  ,alpha)
-    )
     text.text = new_str
-    text.color = new_col
+    text.color = color_from_sign(elo_delta, alpha)
 btn_cnt = len(scores)
 btns_size_x = btn_cnt * BTN_SIZE + (btn_cnt - 1) * BTN_SPACING
 for event, v in enumerate(score_values):
@@ -275,8 +359,11 @@ buttons.extend([up_btn,down_btn])
 
 set_pokemon_pair(left_pokemon, right_pokemon)
 
+MOUSE_SENSITIVITY = 20
 def scroll(delta_y):
-    pass
+    leaderboard_container.translate(0,delta_y * MOUSE_SENSITIVITY)
+
+tab_selector.send_to_front()
 
 clock = pygame.time.Clock()
 while (status):
