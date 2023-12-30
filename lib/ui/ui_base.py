@@ -214,6 +214,11 @@ class Element():
         x,y,sx,sy = self.local_rect
         self.local_rect = (x+delta_x, y+delta_y, sx, sy)
 
+    def rendered(self):
+        if not self.enable_render: return False
+        if self.parent and not self.parent.rendered(): return False
+        return True
+
     @property
     def local_rect(self):
         return self._local_rect
@@ -376,6 +381,7 @@ class InteractiveElement(RectElement):
 
     def onmousedown(self, mouse_pos: tuple[float, float]):
         if not self.enabled: return
+        if not self.rendered(): return
 
         intersects = self.hovered(mouse_pos)
         if not intersects: return
@@ -385,6 +391,7 @@ class InteractiveElement(RectElement):
 
     def onmouseup(self, mouse_pos: tuple[float, float]):
         if not self.enabled: return
+        if not self.rendered(): return
 
         intersects = self.hovered(mouse_pos)
         if not intersects:

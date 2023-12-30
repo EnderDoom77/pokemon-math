@@ -382,11 +382,13 @@ while (status):
         if event.type == pygame.QUIT:
             status = False
         if event.type == pygame.MOUSEBUTTONDOWN:
-            for btn in buttons:
-                btn.onmousedown(mouse_pos)
+            if event.button == 1:
+                for btn in buttons:
+                    btn.onmousedown(mouse_pos)
         if event.type == pygame.MOUSEBUTTONUP:
-            for btn in buttons:
-                btn.onmouseup(mouse_pos)
+            if event.button == 1:
+                for btn in buttons:
+                    btn.onmouseup(mouse_pos)
         if event.type == pygame.MOUSEWHEEL:
             scroll(event.y)
         if event.type == pygame.KEYDOWN:
