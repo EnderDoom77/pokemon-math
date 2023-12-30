@@ -14,6 +14,9 @@ def clamp01(x):
     if x > 1: return 1
     return x
 
+def signed(x) -> str:
+    return f"{'+' if x > 0 else ''}{x}"
+
 def lerp(left: tuple | list, right: tuple | list, t: float) -> tuple:
     return tuple([l + (r-l)*t for l,r in zip(left, right)])
 
