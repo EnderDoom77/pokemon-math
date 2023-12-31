@@ -401,7 +401,7 @@ while (status):
                 penalize_both()
             if event.key == pygame.K_r:
                 change_savefile(session)
-                elo, l_rate = load()
+                elo, l_rate = load(session.savefile)
                 fetch_and_set_pokemon_pair()
             if event.key == pygame.K_s:
                 show_stats()
