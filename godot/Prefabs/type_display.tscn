@@ -23,5 +23,5 @@ custom_minimum_size = Vector2(100, 30)
 layout_mode = 2
 text = "type"
 horizontal_alignment = 1
-vertical_alignment = 1
+vertical_alignment = 2
 uppercase = true
