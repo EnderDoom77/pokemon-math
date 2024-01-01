@@ -1,0 +1,25 @@
+[gd_scene load_steps=3 format=3 uid="uid://cwt7t1q7bsx4"]
+
+[ext_resource type="Script" path="res://Scripts/type_container.gd" id="1_csyvr"]
+[ext_resource type="PackedScene" uid="uid://baceq8e8neu7o" path="res://Prefabs/type_display.tscn" id="2_4qegn"]
+
+[node name="TypeContainer" type="HBoxContainer" node_paths=PackedStringArray("type_display_1", "type_display_2")]
+script = ExtResource("1_csyvr")
+type_display_1 = NodePath("TypeDisplay1")
+type_display_2 = NodePath("TypeDisplay2")
+
+[node name="SpacerLeft" type="Control" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.5
+
+[node name="TypeDisplay1" parent="." instance=ExtResource("2_4qegn")]
+layout_mode = 2
+
+[node name="TypeDisplay2" parent="." instance=ExtResource("2_4qegn")]
+layout_mode = 2
+
+[node name="SpacerRight" type="Control" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.5

@@ -45,7 +45,8 @@
 		"dragon": "#7B63E7",
 		"dark": "#735A4A",
 		"steel": "#ADADC6",
-		"fairy": "#F7B5F7"
+		"fairy": "#F7B5F7",
+		"none": "#000000"
 	},
 	"type_effectiveness": [
 		[ 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 ,0.5, 0 , 1 , 1 ,0.5, 1 ],

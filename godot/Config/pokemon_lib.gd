@@ -1,16 +1,20 @@
 class_name PokemonLib
 extends Object
 
-enum PokeType {NORMAL, FIRE, WATER, GRASS, ELECTRIC, ICE, ROCK, FAIRY, DRAGON, STEEL, FIGHTING, POISON, FLYING, PSYCHIC, GROUND, BUG, GHOST, DARK}
+enum PokeType {NORMAL, FIRE, WATER, GRASS, ELECTRIC, ICE, ROCK, FAIRY, DRAGON, STEEL, FIGHTING, POISON, FLYING, PSYCHIC, GROUND, BUG, GHOST, DARK, NONE}
 enum PokeStat {HEALTH, ATTACK, DEFENSE, SPECIAL_ATTACK, SPECIAL_DEFENSE, SPEED}
-const poke_type_names: Array[String] = ["normal", "fire", "water", "grass", "electric", "ice", "rock", "fairy", "dragon", "steel", "fighting", "poison", "flying", "psychic", "ground", "bug", "ghost", "dark"]
+const poke_type_names: Array[String] = ["normal", "fire", "water", "grass", "electric", "ice", "rock", "fairy", "dragon", "steel", "fighting", "poison", "flying", "psychic", "ground", "bug", "ghost", "dark", "none"]
 const poke_stat_names: Array[String] = ["health", "attack", "defense", "special attack", "special defense", "speed"]
-const poke_types_in_pokedex: Dictionary = {"hp": PokeStat.HEALTH, "atk": PokeStat.ATTACK, "def": PokeStat.DEFENSE, "spa": PokeStat.SPECIAL_ATTACK, "spd": PokeStat.SPECIAL_DEFENSE, "spe": PokeStat.SPEED}
+const poke_stats_in_pokedex: Dictionary = {"hp": PokeStat.HEALTH, "atk": PokeStat.ATTACK, "def": PokeStat.DEFENSE, "spa": PokeStat.SPECIAL_ATTACK, "spd": PokeStat.SPECIAL_DEFENSE, "spe": PokeStat.SPEED}
 static func stat_from_name(name: String) -> PokeStat:
-	return poke_type_names.find(name) as PokeStat
+	return poke_stats_in_pokedex.get(name, -1 as PokeStat)
 static func type_from_name(name: String) -> PokeType:
-	return poke_stat_names.find(name) as PokeType
-	
+	var idx = poke_type_names.find(name.to_lower())
+	if idx == -1:
+		push_warning("Unable to parse pokemon type name to proper type: %s" % name)
+		return PokeType.NONE
+	return idx as PokeType
+
 static var non_alpha_num_regex: RegEx = null
 static func normalize_name(name: String) -> String:
 	if not non_alpha_num_regex:
@@ -19,29 +23,42 @@ static func normalize_name(name: String) -> String:
 	return non_alpha_num_regex.sub(name.to_lower(), "", true)
 const regions: Array[String] = ["alola", "galar", "paldea", "hisui"]
 const POKEMON_IMAGE_PATH: String = "res://Media/Images/Pokemon"
+const POKEMON_TYPE_PATH: String = "res://Media/Images/Types/Icons"
+
+static func load_image_texture(path: String) -> ImageTexture:
+	var image = Image.new()
+	image.load(path)
+	return ImageTexture.create_from_image(image)	
 
 class Config extends RefCounted:
-	var types : Array[PokeType]
-	var type_colors : Dictionary
-	var type_effectiveness : Array[Array]
-	var stats : Array[PokeStat]
+	var types: Array[PokeType]
+	var type_images: Array[ImageTexture]
+	var type_colors: Array[Color]
+	var type_effectiveness: Array[Array]
 	var elo_gradient: Gradient
 	
-	func _init( 
-		types : Array[String],
-		type_colors : Dictionary, 
-		type_effectiveness : Array[Array],
-		stats : Array[String],
+	@warning_ignore("shadowed_variable")
+	func _init(
+		types: Array,
+		type_colors: Dictionary, 
+		type_effectiveness: Array,
 		elo_gradient: Dictionary):
 		
-		self.types = types.map(PokemonLib.type_from_name)
-		self.type_colors = type_colors
-		self.type_effectiveness = type_effectiveness
-		self.stats = stats.map(PokemonLib.stat_from_name)
+		self.types.assign(types.map(PokemonLib.type_from_name))
+		self.type_effectiveness.assign(type_effectiveness)
 		self.elo_gradient = MathLib.parse_gradient(elo_gradient)
+		# Create an array of default values
+		self.type_colors.assign(PokeType.values().map(func(t): return type_colors[poke_type_names[t]]))
+		self.type_images.assign(ArrayUtils.empty_array(len(PokeType.values())))
+		for t in PokeType.values():
+			var path = "%s/%s.png" % [POKEMON_TYPE_PATH, poke_type_names[t]]
+			if not FileAccess.file_exists(path):
+				push_error("Unable to find poketype icon file at path %s" % path)
+				continue
+			self.type_images[t] = PokemonLib.load_image_texture(path)
 
 	static func from_dict(data : Dictionary) -> Config:
-		return Config.new(data["types"], data["type_colors"], data["type_effectiveness"], data["stats"], data["elo_gradient"])	
+		return Config.new(data["types"], data["type_colors"], data["type_effectiveness"], data["elo_gradient"])	
 
 static var _config: Config = null
 static func get_config() -> Config:
@@ -61,7 +78,7 @@ class Pokemon extends RefCounted:
 	# The stylized English name of the pokemon
 	var name: String
 	# The type(s) of the pokemon
-	var types: Array[String]
+	var types: Array[PokemonLib.PokeType]
 	# Dictionary linking stat names to their base value
 	var base_stats: Array[int]
 	# Strings normalized by `normalize_name` of the starting ability values
@@ -77,63 +94,67 @@ class Pokemon extends RefCounted:
 	# Any special forms that apply to this variant
 	var formes: Array[String]
 	# Any other pokemon that this pokemon can evolve into
-	var evos: Array[String]
+	var evolutions: Array[String]
 	# A pokemon (if any) that this pokenon evolves from
-	var prevo: String
+	var preevolution: String
 	# The type of evolution that this pokemon has (e.g. level, levelFriendship, useItem, trade, other...)
-	var evo_type: String
+	var evolution_type: String
 	# The condition (if any) for this pokemon to evolve
-	var evo_condition: String
+	var evolution_condition: String
 	# The level required for this pokemon to evolve. -1 if unknown or no level is required
-	var evo_level: int 
+	var evolution_level: int 
 	# The egg groups that this pokemon falls into
 	var egg_groups: Array[String]
 	# Competitive tier of the pokemon
 	var tier: String
 	
 	var is_regional: bool = false
+	var region: String = ""
 	var is_mega: bool = false
+	var is_gmax: bool = false
 	var is_totem: bool = false
 	var is_base: bool = false
 	var alt_types: bool = false
 	var misc_variant: bool = false
 	var image_filename: String = ""
+	var image_path: String = ""
 	var image: ImageTexture = null
 	
+	@warning_ignore("shadowed_variable")
 	func _init( 
-		id: String, num: int, name: String, types: Array[String],
+		id: String, num: int, name: String, types: Array,
 		base_stats: Dictionary = {}, abilities: Dictionary = {},
 		heightm: float = -1, weightkg: float = -1, color: String = "", gender: String = "", forme: String = "",
-		evos: Array[String] = [], prevo: String = "", evo_type: String = "level", evo_condition: String = "", evo_level: int = -1, 
-		egg_groups: Array[String] = [], tier: String = ""):
+		evos: Array = [], prevo: String = "", evo_type: String = "level", evo_condition: String = "", evo_level: int = -1, 
+		egg_groups: Array = [], tier: String = ""):
 		
 		self.id = id
 		self.num = num
 		self.name = name
-		self.types = types.map(PokemonLib.normalize_name)
+		self.types.assign(types.map(PokemonLib.type_from_name))
 		self.base_stats = []
 		for i in PokeStat.values():
 			self.base_stats.append(-1)
 		if len(base_stats) != len(PokeStat):
 			print_debug("Received improperly sized dictionary for pokemon %s, expecting %d values." % [self.id, len(PokeStat)], base_stats)
-		for t in base_stats:
-			if t not in poke_types_in_pokedex:
-				print_debug("Failed to recognize stat for pokemeon %s: \"%s\"" % [self.id, t])
-			self.base_stats[poke_types_in_pokedex[t]] = base_stats[t]
+		for stat in base_stats:
+			if stat not in PokemonLib.poke_stats_in_pokedex:
+				print_debug("Failed to recognize stat for pokemeon %s: \"%s\"" % [self.id, stat])
+			self.base_stats[poke_stats_in_pokedex[stat]] = int(base_stats[stat])
 		
-		self.abilities = abilities.values().map(PokemonLib.normalize_name)
-		self.height = heightm
-		self.weight = weightkg
+		self.abilities.assign(abilities.values().map(PokemonLib.normalize_name))
+		self.heightm = heightm
+		self.weightkg = weightkg
 		self.color = color 
-		self.evolutions = evos
+		self.evolutions.assign(evos)
 		self.preevolution = prevo
 		self.evolution_type = evo_type
 		self.evolution_condition = evo_condition
 		self.evolution_level = evo_level
 		self.gender = gender
-		self.egg_groups = egg_groups
+		self.egg_groups.assign(egg_groups)
 		self.tier = tier
-		self.formes = ArrayUtils.packed_string_array_map(forme.split("-", false), func(s:String): s.to_lower())
+		self.formes = ArrayUtils.packed_string_array_map(forme.split("-", false), func(s:String): return s.to_lower())
 
 		# Postprocessing variables
 		self.is_regional = false
@@ -155,12 +176,8 @@ class Pokemon extends RefCounted:
 		self.image_path = "%s/%s" % [POKEMON_IMAGE_PATH, self.image_filename]
 		
 	func get_image() -> ImageTexture:
-		if self.image == null and FileAccess.file_exists(self.img_path):
-			var image = Image.new()
-			image.load(self.image_path)
-			var texture = ImageTexture.new()
-			texture.create_from_image(image)
-			self.image = texture
+		if self.image == null and FileAccess.file_exists(self.image_path):
+			self.image = PokemonLib.load_image_texture(self.image_path)
 		return self.image
 	
 	static func from_dict(pokemon_id: String, data: Dictionary) -> Pokemon:
@@ -171,12 +188,13 @@ class Pokemon extends RefCounted:
 			data.get("groups", []), data.get("tier", "")
 		)
 
-static var _pokedex: Array[Pokemon] = []
-static func get_pokedex() -> Array[Pokemon]:
+static var _pokedex: Dictionary = {}
+static func get_pokedex() -> Dictionary:
 	if not _pokedex.is_empty():
 		return _pokedex
 	var file = FileAccess.open("res://Config/pokedex.json", FileAccess.READ)
 	var file_contents = file.get_as_text()
 	var data = JSON.parse_string(file_contents)
-	_pokedex = data.map(Pokemon.from_dict)
+	for key in data.keys():
+		_pokedex[key] = Pokemon.from_dict(key, data[key])
 	return _pokedex

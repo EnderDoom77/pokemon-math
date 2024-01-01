@@ -2,9 +2,9 @@
 
 [ext_resource type="Script" path="res://Scripts/pokemon_display_large.gd" id="1_ahmja"]
 [ext_resource type="Texture2D" uid="uid://c4uf1o04bmmym" path="res://icon.svg" id="2_f6rlm"]
-[ext_resource type="PackedScene" uid="uid://baceq8e8neu7o" path="res://Prefabs/type_display.tscn" id="3_srj7x"]
+[ext_resource type="PackedScene" uid="uid://cwt7t1q7bsx4" path="res://Prefabs/type_container.tscn" id="3_qbur2"]
 
-[node name="PokemonDisplay" type="Control"]
+[node name="PokemonDisplay" type="Control" node_paths=PackedStringArray("type_container", "image_display", "name_display")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -12,6 +12,9 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_ahmja")
+type_container = NodePath("MarginContainer/VBoxContainer/TypeContainer")
+image_display = NodePath("MarginContainer/VBoxContainer/PokemonImage")
+name_display = NodePath("MarginContainer/VBoxContainer/PanelContainer/MarginContainer/PokemonName")
 
 [node name="Background" type="Panel" parent="."]
 layout_mode = 1
@@ -64,23 +67,5 @@ layout_mode = 2
 text = "Placeholder Text"
 horizontal_alignment = 1
 
-[node name="TypeContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+[node name="TypeContainer" parent="MarginContainer/VBoxContainer" instance=ExtResource("3_qbur2")]
 layout_mode = 2
-
-[node name="SpacerLeft" type="Control" parent="MarginContainer/VBoxContainer/TypeContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 0.5
-
-[node name="TypeDisplay1" parent="MarginContainer/VBoxContainer/TypeContainer" instance=ExtResource("3_srj7x")]
-custom_minimum_size = Vector2(250, 0)
-layout_mode = 2
-
-[node name="TypeDisplay2" parent="MarginContainer/VBoxContainer/TypeContainer" instance=ExtResource("3_srj7x")]
-custom_minimum_size = Vector2(250, 0)
-layout_mode = 2
-
-[node name="SpacerRight" type="Control" parent="MarginContainer/VBoxContainer/TypeContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 0.5

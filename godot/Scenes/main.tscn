@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3 uid="uid://bomvmtelyau33"]
+[gd_scene load_steps=6 format=3 uid="uid://bomvmtelyau33"]
 
 [ext_resource type="Theme" uid="uid://d36lmlivpbqsv" path="res://Config/Themes/BaseUITheme.theme" id="1_c66jc"]
 [ext_resource type="Script" path="res://Scripts/tab_selector.gd" id="2_7lpef"]
 [ext_resource type="Script" path="res://Scripts/rating_buttons.gd" id="3_b3e3t"]
 [ext_resource type="PackedScene" uid="uid://dcc0pv3o4krmr" path="res://Prefabs/rating_button.tscn" id="4_de2jx"]
+[ext_resource type="PackedScene" uid="uid://bvy8kmo1voh7v" path="res://Prefabs/pokemon_display.tscn" id="5_uyrqs"]
 
 [node name="UI" type="Control"]
 layout_mode = 3
@@ -87,6 +88,35 @@ theme = ExtResource("1_c66jc")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="Screens/Royale/RatingButtons/MarginContainer"]
 layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="Screens/Royale"]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 0.903
+offset_bottom = -0.0900879
+theme_override_constants/margin_left = 50
+theme_override_constants/margin_top = 50
+theme_override_constants/margin_right = 50
+theme_override_constants/margin_bottom = 50
+
+[node name="DuelDisplay" type="HBoxContainer" parent="Screens/Royale/MarginContainer"]
+layout_mode = 2
+
+[node name="PokemonDisplay2" parent="Screens/Royale/MarginContainer/DuelDisplay" instance=ExtResource("5_uyrqs")]
+layout_mode = 2
+size_flags_horizontal = 3
+pokemon_id = "togekiss"
+
+[node name="Spacer" type="Control" parent="Screens/Royale/MarginContainer/DuelDisplay"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.4
+
+[node name="PokemonDisplay" parent="Screens/Royale/MarginContainer/DuelDisplay" instance=ExtResource("5_uyrqs")]
+layout_mode = 2
+size_flags_horizontal = 3
+pokemon_id = "pikachu"
 
 [node name="Leaderboard" type="Control" parent="Screens"]
 layout_mode = 1

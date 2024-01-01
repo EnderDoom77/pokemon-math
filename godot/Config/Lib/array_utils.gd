@@ -15,11 +15,17 @@ static func dictionary_map_safe(array: Array[Variant], dict: Dictionary, default
 	return result
 	
 static func packed_string_array_map(string_array: PackedStringArray, function: Callable) -> Array[String]:
-	var result = []
+	var result: Array[String] = []
 	for s in string_array:
 		result.append(function.call(s))
 	return result
-	
+
+static func empty_array(length: int, value: Variant = null) -> Array[Variant]:
+	var result = []
+	for i in range(length):
+		result.append(value)
+	return result
+
 static func arg_max(array: Array[Variant], key: Callable) -> Variant:
 	if array.is_empty(): return null
 	var max_value = key.call(array[0])

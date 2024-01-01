@@ -52,12 +52,12 @@ static func max_contrast(color: Color, tint: float = 0) -> Color:
 	var sat = color.s
 	var alpha = color.a
 	var lightness_options = [tint * 50, (2 - tint) * 50]
-	var resulting_colors = lightness_options.map(func(l): Color.from_ok_hsl(hue, sat, l, alpha))
-	return ArrayUtils.arg_max(resulting_colors, func(c): contrast(color, c))
+	var resulting_colors = lightness_options.map(func(l): return Color.from_ok_hsl(hue, sat, l, alpha))
+	return ArrayUtils.arg_max(resulting_colors, func(c): return contrast(color, c))
 
 static func calc_elo_delta(own_elo: int, opponent_elo: int, k_value: float, result_score: float) -> int:
-	var q_own = pow(10, own_elo/400)
-	var q_opponent = pow(10, opponent_elo/400)
+	var q_own = pow(10, own_elo/400.0)
+	var q_opponent = pow(10, opponent_elo/400.0)
 	
 	var expected_score = q_own/(q_own + q_opponent)
 	return int(k_value * (result_score - expected_score))
@@ -66,6 +66,7 @@ class CustomGradient:
 	var keys: Array[float]
 	var values: Array[Color]
 	
+	@warning_ignore("shadowed_variable")
 	func _init(keys: Array[float], values: Array[Color]):
 		self.keys = keys
 		self.values = values
