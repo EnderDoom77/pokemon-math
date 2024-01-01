@@ -1,0 +1,101 @@
+[gd_scene load_steps=5 format=3 uid="uid://bomvmtelyau33"]
+
+[ext_resource type="Theme" uid="uid://d36lmlivpbqsv" path="res://Config/Themes/BaseUITheme.theme" id="1_c66jc"]
+[ext_resource type="Script" path="res://Scripts/tab_selector.gd" id="2_7lpef"]
+[ext_resource type="Script" path="res://Scripts/rating_buttons.gd" id="3_b3e3t"]
+[ext_resource type="PackedScene" uid="uid://dcc0pv3o4krmr" path="res://Prefabs/rating_button.tscn" id="4_de2jx"]
+
+[node name="UI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_c66jc")
+
+[node name="TabSelector" type="MarginContainer" parent="." node_paths=PackedStringArray("screens_container")]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 50.0
+grow_horizontal = 2
+theme = ExtResource("1_c66jc")
+script = ExtResource("2_7lpef")
+current_screen = "Royale"
+screens_container = NodePath("../Screens")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="TabSelector"]
+layout_mode = 2
+theme = ExtResource("1_c66jc")
+
+[node name="Royale" type="Button" parent="TabSelector/HBoxContainer"]
+layout_mode = 2
+theme = ExtResource("1_c66jc")
+text = "Royale"
+
+[node name="Leaderboard" type="Button" parent="TabSelector/HBoxContainer"]
+layout_mode = 2
+theme = ExtResource("1_c66jc")
+text = "Leaderboard"
+
+[node name="Screens" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 50.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_c66jc")
+
+[node name="Royale" type="Control" parent="Screens"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_c66jc")
+
+[node name="RatingButtons" type="Panel" parent="Screens/Royale"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -100.0
+grow_horizontal = 2
+grow_vertical = 0
+pivot_offset = Vector2(0, 100)
+theme = ExtResource("1_c66jc")
+script = ExtResource("3_b3e3t")
+button_prefab = ExtResource("4_de2jx")
+scores = Array[float]([-1.0, -0.8, -0.5, -0.2, 0.0, 0.2, 0.5, 0.8, 1.0])
+color_left = Color(0.592157, 0, 0.0352941, 1)
+color_neutral = Color(0.313726, 0.313726, 0.313726, 1)
+color_right = Color(0, 0.321569, 0.615686, 1)
+
+[node name="MarginContainer" type="MarginContainer" parent="Screens/Royale/RatingButtons"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_c66jc")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Screens/Royale/RatingButtons/MarginContainer"]
+layout_mode = 2
+
+[node name="Leaderboard" type="Control" parent="Screens"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_c66jc")
+
+[connection signal="pressed" from="TabSelector/HBoxContainer/Royale" to="TabSelector" method="_on_royale_pressed"]
+[connection signal="pressed" from="TabSelector/HBoxContainer/Leaderboard" to="TabSelector" method="_on_leaderboard_pressed"]

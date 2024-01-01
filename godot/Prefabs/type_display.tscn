@@ -1,0 +1,25 @@
+[gd_scene load_steps=3 format=3 uid="uid://baceq8e8neu7o"]
+
+[ext_resource type="Theme" uid="uid://c6sr0ah1ued6b" path="res://Config/Themes/TypeDisplayTheme.theme" id="1_8kyd0"]
+[ext_resource type="Script" path="res://Scripts/type_display.gd" id="1_u2uxl"]
+
+[node name="TypeDisplay1" type="PanelContainer"]
+offset_right = 250.0
+offset_bottom = 46.0
+theme = ExtResource("1_8kyd0")
+script = ExtResource("1_u2uxl")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 3
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 3
+
+[node name="Label" type="Label" parent="MarginContainer"]
+custom_minimum_size = Vector2(100, 30)
+layout_mode = 2
+text = "type"
+horizontal_alignment = 1
+vertical_alignment = 1
+uppercase = true

@@ -1,0 +1,4 @@
+[gd_scene format=3 uid="uid://dcc0pv3o4krmr"]
+
+[node name="RatingButton" type="Button"]
+size_flags_horizontal = 3
