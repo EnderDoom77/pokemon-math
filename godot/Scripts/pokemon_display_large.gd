@@ -1,3 +1,4 @@
+class_name PokemonDisplay
 extends Node
 
 @export var pokemon_id: String = ""

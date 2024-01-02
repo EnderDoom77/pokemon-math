@@ -25,14 +25,12 @@ const regions: Array[String] = ["alola", "galar", "paldea", "hisui"]
 const POKEMON_IMAGE_PATH: String = "res://Media/Images/Pokemon"
 const POKEMON_TYPE_PATH: String = "res://Media/Images/Types/Icons"
 
-static func load_image_texture(path: String) -> ImageTexture:
-	var image = Image.new()
-	image.load(path)
-	return ImageTexture.create_from_image(image)	
+static func load_image_texture(path: String) -> CompressedTexture2D:
+	return load(path)
 
 class Config extends RefCounted:
 	var types: Array[PokeType]
-	var type_images: Array[ImageTexture]
+	var type_images: Array[CompressedTexture2D]
 	var type_colors: Array[Color]
 	var type_effectiveness: Array[Array]
 	var elo_gradient: Gradient
@@ -118,7 +116,7 @@ class Pokemon extends RefCounted:
 	var misc_variant: bool = false
 	var image_filename: String = ""
 	var image_path: String = ""
-	var image: ImageTexture = null
+	var image: CompressedTexture2D = null
 	
 	@warning_ignore("shadowed_variable")
 	func _init( 
@@ -175,7 +173,7 @@ class Pokemon extends RefCounted:
 		self.image_filename = "%04d_%s.png" % [self.num, self.id]
 		self.image_path = "%s/%s" % [POKEMON_IMAGE_PATH, self.image_filename]
 		
-	func get_image() -> ImageTexture:
+	func get_image() -> CompressedTexture2D:
 		if self.image == null and FileAccess.file_exists(self.image_path):
 			self.image = PokemonLib.load_image_texture(self.image_path)
 		return self.image

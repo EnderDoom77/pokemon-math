@@ -1,10 +1,16 @@
-[gd_scene load_steps=6 format=3 uid="uid://bomvmtelyau33"]
+[gd_scene load_steps=12 format=3 uid="uid://bomvmtelyau33"]
 
 [ext_resource type="Theme" uid="uid://d36lmlivpbqsv" path="res://Config/Themes/BaseUITheme.theme" id="1_c66jc"]
 [ext_resource type="Script" path="res://Scripts/tab_selector.gd" id="2_7lpef"]
 [ext_resource type="Script" path="res://Scripts/rating_buttons.gd" id="3_b3e3t"]
+[ext_resource type="Script" path="res://Scripts/royale.gd" id="3_tvjj4"]
 [ext_resource type="PackedScene" uid="uid://dcc0pv3o4krmr" path="res://Prefabs/rating_button.tscn" id="4_de2jx"]
 [ext_resource type="PackedScene" uid="uid://bvy8kmo1voh7v" path="res://Prefabs/pokemon_display.tscn" id="5_uyrqs"]
+[ext_resource type="Script" path="res://Scripts/SaveSelector.gd" id="7_kngvi"]
+[ext_resource type="Texture2D" uid="uid://yajw0oopo56e" path="res://Media/Images/UI/Confirm.png" id="9_a02h8"]
+[ext_resource type="Texture2D" uid="uid://chlmtn4or6itx" path="res://Media/Images/UI/Cancel.png" id="9_d04j4"]
+[ext_resource type="Texture2D" uid="uid://bsfsh1t2ucjtb" path="res://Media/Images/UI/Delete.png" id="10_aiw1w"]
+[ext_resource type="Texture2D" uid="uid://42e1xq06v2yo" path="res://Media/Images/UI/Create.png" id="11_3attl"]
 
 [node name="UI" type="Control"]
 layout_mode = 3
@@ -58,6 +64,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("1_c66jc")
+script = ExtResource("3_tvjj4")
 
 [node name="RatingButtons" type="Panel" parent="Screens/Royale"]
 layout_mode = 1
@@ -93,8 +100,8 @@ layout_mode = 2
 layout_mode = 1
 anchors_preset = -1
 anchor_right = 1.0
-anchor_bottom = 0.903
-offset_bottom = -0.0900879
+anchor_bottom = 0.833
+offset_bottom = 1.86597
 theme_override_constants/margin_left = 50
 theme_override_constants/margin_top = 50
 theme_override_constants/margin_right = 50
@@ -127,5 +134,76 @@ grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("1_c66jc")
 
+[node name="SaveSelector" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -40.0
+offset_bottom = 40.0
+grow_horizontal = 0
+
+[node name="HBoxContainer" type="HBoxContainer" parent="SaveSelector"]
+layout_mode = 2
+
+[node name="SaveLabel" type="Label" parent="SaveSelector/HBoxContainer"]
+layout_mode = 2
+text = "Current Save:"
+
+[node name="SaveSelector" type="OptionButton" parent="SaveSelector/HBoxContainer" node_paths=PackedStringArray("new_dialog", "new_button", "confirm_button", "savename_input", "confirmation_dialog")]
+layout_mode = 2
+script = ExtResource("7_kngvi")
+new_dialog = NodePath("../NewDialog")
+new_button = NodePath("../New")
+confirm_button = NodePath("../NewDialog/Confirm")
+savename_input = NodePath("../NewDialog/SavenameInput")
+confirmation_dialog = NodePath("../Delete/ConfirmationDialog")
+icon_new = ExtResource("11_3attl")
+icon_cancel = ExtResource("9_d04j4")
+
+[node name="Delete" type="Button" parent="SaveSelector/HBoxContainer"]
+custom_minimum_size = Vector2(32, 0)
+layout_mode = 2
+icon = ExtResource("10_aiw1w")
+icon_alignment = 1
+expand_icon = true
+
+[node name="ConfirmationDialog" type="ConfirmationDialog" parent="SaveSelector/HBoxContainer/Delete"]
+title = "Confirm Delete"
+initial_position = 2
+size = Vector2i(416, 121)
+dialog_text = "Are you sure you want to delete this save? 
+(This action cannot be undone)"
+
+[node name="New" type="Button" parent="SaveSelector/HBoxContainer"]
+custom_minimum_size = Vector2(32, 0)
+layout_mode = 2
+toggle_mode = true
+icon = ExtResource("11_3attl")
+icon_alignment = 1
+expand_icon = true
+
+[node name="NewDialog" type="HBoxContainer" parent="SaveSelector/HBoxContainer"]
+visible = false
+layout_mode = 2
+
+[node name="SavenameInput" type="LineEdit" parent="SaveSelector/HBoxContainer/NewDialog"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+placeholder_text = "Save name here..."
+max_length = 20
+
+[node name="Confirm" type="Button" parent="SaveSelector/HBoxContainer/NewDialog"]
+custom_minimum_size = Vector2(32, 0)
+layout_mode = 2
+icon = ExtResource("9_a02h8")
+expand_icon = true
+
 [connection signal="pressed" from="TabSelector/HBoxContainer/Royale" to="TabSelector" method="_on_royale_pressed"]
 [connection signal="pressed" from="TabSelector/HBoxContainer/Leaderboard" to="TabSelector" method="_on_leaderboard_pressed"]
+[connection signal="evaluated" from="Screens/Royale/RatingButtons" to="Screens/Royale" method="_on_rating_buttons_evaluated"]
+[connection signal="pressed" from="SaveSelector/HBoxContainer/Delete" to="SaveSelector/HBoxContainer/SaveSelector" method="_on_delete_pressed"]
+[connection signal="confirmed" from="SaveSelector/HBoxContainer/Delete/ConfirmationDialog" to="SaveSelector/HBoxContainer/SaveSelector" method="_on_confirmation_dialog_confirmed"]
+[connection signal="toggled" from="SaveSelector/HBoxContainer/New" to="SaveSelector/HBoxContainer/SaveSelector" method="_on_new_toggled"]
+[connection signal="text_changed" from="SaveSelector/HBoxContainer/NewDialog/SavenameInput" to="SaveSelector/HBoxContainer/SaveSelector" method="_on_line_edit_text_changed"]
+[connection signal="pressed" from="SaveSelector/HBoxContainer/NewDialog/Confirm" to="SaveSelector/HBoxContainer/SaveSelector" method="_on_confirm_pressed"]
