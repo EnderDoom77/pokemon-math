@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3 uid="uid://fxg321bcotnt"]
+
+[ext_resource type="Theme" uid="uid://d36lmlivpbqsv" path="res://Config/Themes/BaseUITheme.theme" id="1_el7y7"]
+[ext_resource type="Script" path="res://Scripts/UI/FadingTextDisplay.gd" id="2_2lcb0"]
+
+[node name="Label" type="Label"]
+size_flags_vertical = 1
+theme = ExtResource("1_el7y7")
+theme_override_font_sizes/font_size = 72
+text = "(0)"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("2_2lcb0")

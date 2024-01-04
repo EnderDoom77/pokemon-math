@@ -1,16 +1,29 @@
-[gd_scene load_steps=12 format=3 uid="uid://bomvmtelyau33"]
+[gd_scene load_steps=25 format=3 uid="uid://bomvmtelyau33"]
 
 [ext_resource type="Theme" uid="uid://d36lmlivpbqsv" path="res://Config/Themes/BaseUITheme.theme" id="1_c66jc"]
-[ext_resource type="Script" path="res://Scripts/tab_selector.gd" id="2_7lpef"]
-[ext_resource type="Script" path="res://Scripts/rating_buttons.gd" id="3_b3e3t"]
-[ext_resource type="Script" path="res://Scripts/royale.gd" id="3_tvjj4"]
+[ext_resource type="Script" path="res://Scripts/UI/TabSelector.gd" id="2_7lpef"]
+[ext_resource type="Script" path="res://Scripts/UI/RatingButtons.gd" id="3_b3e3t"]
+[ext_resource type="Script" path="res://Scripts/Royale.gd" id="3_tvjj4"]
 [ext_resource type="PackedScene" uid="uid://dcc0pv3o4krmr" path="res://Prefabs/rating_button.tscn" id="4_de2jx"]
 [ext_resource type="PackedScene" uid="uid://bvy8kmo1voh7v" path="res://Prefabs/pokemon_display.tscn" id="5_uyrqs"]
+[ext_resource type="PackedScene" uid="uid://fxg321bcotnt" path="res://Prefabs/fading_text_display.tscn" id="7_1krre"]
 [ext_resource type="Script" path="res://Scripts/SaveSelector.gd" id="7_kngvi"]
+[ext_resource type="Script" path="res://Scripts/Leaderboard.gd" id="8_bt6uv"]
+[ext_resource type="Texture2D" uid="uid://bfmjwumq5uph8" path="res://Media/Images/UI/SortOptions/Alphabetical.png" id="8_km2c5"]
+[ext_resource type="Texture2D" uid="uid://eni1qgorg1f6" path="res://Media/Images/UI/SortOptions/Numeric.png" id="9_1lj0e"]
 [ext_resource type="Texture2D" uid="uid://yajw0oopo56e" path="res://Media/Images/UI/Confirm.png" id="9_a02h8"]
 [ext_resource type="Texture2D" uid="uid://chlmtn4or6itx" path="res://Media/Images/UI/Cancel.png" id="9_d04j4"]
+[ext_resource type="Script" path="res://Scripts/TypeSelector.gd" id="10_3dwmw"]
+[ext_resource type="Texture2D" uid="uid://cb4ww2gmddjw4" path="res://Media/Images/UI/SortOptions/Elo.png" id="10_24so2"]
 [ext_resource type="Texture2D" uid="uid://bsfsh1t2ucjtb" path="res://Media/Images/UI/Delete.png" id="10_aiw1w"]
+[ext_resource type="PackedScene" uid="uid://btkqfmty8gg62" path="res://Prefabs/type_toggler.tscn" id="10_meotw"]
 [ext_resource type="Texture2D" uid="uid://42e1xq06v2yo" path="res://Media/Images/UI/Create.png" id="11_3attl"]
+[ext_resource type="Texture2D" uid="uid://ckoclrmib7opg" path="res://Media/Images/UI/SortOptions/EloDelta.png" id="11_dp541"]
+[ext_resource type="Texture2D" uid="uid://do55jbobo6sah" path="res://Media/Images/UI/SortOptions/Ascending.png" id="12_a7efm"]
+[ext_resource type="Texture2D" uid="uid://bq4m2estio5pj" path="res://Media/Images/UI/SortOptions/Descending.png" id="13_wpgkr"]
+[ext_resource type="Texture2D" uid="uid://c3c8odfo8cho" path="res://Media/Images/UI/Refresh.png" id="15_m1tjl"]
+[ext_resource type="Script" path="res://Scripts/FX/ActiveShow.gd" id="16_fvmit"]
+[ext_resource type="PackedScene" uid="uid://dsixfsfbriiqa" path="res://Prefabs/leaderboard_item.tscn" id="20_s6vts"]
 
 [node name="UI" type="Control"]
 layout_mode = 3
@@ -56,7 +69,8 @@ grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("1_c66jc")
 
-[node name="Royale" type="Control" parent="Screens"]
+[node name="Royale" type="Control" parent="Screens" node_paths=PackedStringArray("left_display", "right_display", "left_elo_delta", "right_elo_delta")]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -65,6 +79,13 @@ grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("1_c66jc")
 script = ExtResource("3_tvjj4")
+left_display = NodePath("MarginContainer/DuelDisplay/PokemonDisplay2")
+right_display = NodePath("MarginContainer/DuelDisplay/PokemonDisplay")
+left_elo_delta = NodePath("MarginContainer/DuelDisplay/PokemonDisplay2/EloDeltaDisplay")
+right_elo_delta = NodePath("MarginContainer/DuelDisplay/PokemonDisplay/EloDeltaDisplay")
+negative_color = Color(1, 0.501961, 0.435294, 1)
+neutral_color = Color(0.54902, 0.54902, 0.54902, 1)
+positive_color = Color(0.32549, 1, 0.298039, 1)
 
 [node name="RatingButtons" type="Panel" parent="Screens/Royale"]
 layout_mode = 1
@@ -115,6 +136,10 @@ layout_mode = 2
 size_flags_horizontal = 3
 pokemon_id = "togekiss"
 
+[node name="EloDeltaDisplay" parent="Screens/Royale/MarginContainer/DuelDisplay/PokemonDisplay2" instance=ExtResource("7_1krre")]
+self_modulate = Color(1, 1, 1, 0)
+layout_mode = 2
+
 [node name="Spacer" type="Control" parent="Screens/Royale/MarginContainer/DuelDisplay"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -125,7 +150,11 @@ layout_mode = 2
 size_flags_horizontal = 3
 pokemon_id = "pikachu"
 
-[node name="Leaderboard" type="Control" parent="Screens"]
+[node name="EloDeltaDisplay" parent="Screens/Royale/MarginContainer/DuelDisplay/PokemonDisplay" instance=ExtResource("7_1krre")]
+self_modulate = Color(1, 1, 1, 0)
+layout_mode = 2
+
+[node name="Leaderboard" type="Control" parent="Screens" node_paths=PackedStringArray("leaderboard_container")]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -133,6 +162,210 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("1_c66jc")
+script = ExtResource("8_bt6uv")
+leaderboard_item = ExtResource("20_s6vts")
+leaderboard_container = NodePath("MarginContainer/Content/ScrollContainer/VBoxContainer")
+
+[node name="MarginContainer" type="MarginContainer" parent="Screens/Leaderboard"]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Content" type="VBoxContainer" parent="Screens/Leaderboard/MarginContainer"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Screens/Leaderboard/MarginContainer/Content"]
+layout_mode = 2
+
+[node name="MiscOptions" type="VBoxContainer" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 2
+
+[node name="Label" type="Label" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/MiscOptions"]
+layout_mode = 2
+text = "Options:"
+
+[node name="Spacer" type="Control" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/MiscOptions"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Attributes" type="HBoxContainer" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/MiscOptions"]
+layout_mode = 2
+
+[node name="Sort" type="VBoxContainer" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/MiscOptions/Attributes"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/MiscOptions/Attributes/Sort"]
+layout_mode = 2
+theme = ExtResource("1_c66jc")
+theme_type_variation = &"LabelLegendSmall"
+text = "Sort by:"
+
+[node name="SortOptions" type="OptionButton" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/MiscOptions/Attributes/Sort"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+size_flags_vertical = 3
+theme = ExtResource("1_c66jc")
+expand_icon = true
+item_count = 4
+selected = 0
+popup/item_0/text = "Name"
+popup/item_0/icon = ExtResource("8_km2c5")
+popup/item_0/id = 0
+popup/item_1/text = "Pokedex #"
+popup/item_1/icon = ExtResource("9_1lj0e")
+popup/item_1/id = 1
+popup/item_2/text = "Elo"
+popup/item_2/icon = ExtResource("10_24so2")
+popup/item_2/id = 2
+popup/item_3/text = "Elo Delta"
+popup/item_3/icon = ExtResource("11_dp541")
+popup/item_3/id = 3
+
+[node name="Mode" type="VBoxContainer" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/MiscOptions/Attributes"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/MiscOptions/Attributes/Mode"]
+layout_mode = 2
+theme = ExtResource("1_c66jc")
+theme_type_variation = &"LabelLegendSmall"
+text = "Sort Mode:"
+
+[node name="SortOptions" type="OptionButton" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/MiscOptions/Attributes/Mode"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+size_flags_vertical = 3
+theme = ExtResource("1_c66jc")
+expand_icon = true
+item_count = 2
+selected = 0
+allow_reselect = true
+popup/item_0/text = "Ascending"
+popup/item_0/icon = ExtResource("12_a7efm")
+popup/item_0/id = 0
+popup/item_1/text = "Descending "
+popup/item_1/icon = ExtResource("13_wpgkr")
+popup/item_1/id = 1
+
+[node name="Refresh" type="VBoxContainer" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/MiscOptions/Attributes"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/MiscOptions/Attributes/Refresh"]
+layout_mode = 2
+theme = ExtResource("1_c66jc")
+theme_type_variation = &"LabelLegendSmall"
+text = "Refresh:"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/MiscOptions/Attributes/Refresh"]
+layout_mode = 2
+
+[node name="Refresh" type="Button" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/MiscOptions/Attributes/Refresh/HBoxContainer"]
+custom_minimum_size = Vector2(36, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+icon = ExtResource("15_m1tjl")
+expand_icon = true
+
+[node name="Auto-Refresh" type="Button" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/MiscOptions/Attributes/Refresh/HBoxContainer" node_paths=PackedStringArray("target_node")]
+layout_mode = 2
+toggle_mode = true
+button_pressed = true
+text = "Auto"
+script = ExtResource("16_fvmit")
+target_node = NodePath(".")
+animated_properties = Array[String](["self_modulate"])
+target_values = [Color(0.321569, 0.321569, 1, 1)]
+interval = 2.0
+
+[node name="VSeparator" type="VSeparator" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer"]
+layout_mode = 2
+
+[node name="FilterOptions" type="VBoxContainer" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/FilterOptions"]
+layout_mode = 2
+text = "Filter:"
+
+[node name="Attributes" type="HBoxContainer" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/FilterOptions"]
+layout_mode = 2
+
+[node name="Name" type="VBoxContainer" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/FilterOptions/Attributes"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/FilterOptions/Attributes/Name"]
+layout_mode = 2
+theme = ExtResource("1_c66jc")
+theme_type_variation = &"LabelLegendSmall"
+text = "Name:"
+
+[node name="TextEdit" type="LineEdit" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/FilterOptions/Attributes/Name"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+size_flags_vertical = 3
+theme = ExtResource("1_c66jc")
+placeholder_text = "Pokemon name..."
+clear_button_enabled = true
+
+[node name="TypeSelector" type="VBoxContainer" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/FilterOptions/Attributes"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/FilterOptions/Attributes/TypeSelector"]
+layout_mode = 2
+theme = ExtResource("1_c66jc")
+theme_type_variation = &"LabelLegendSmall"
+text = "Must have type:"
+
+[node name="TypeOption" type="Button" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/FilterOptions/Attributes/TypeSelector" node_paths=PackedStringArray("popup", "type_container")]
+custom_minimum_size = Vector2(150, 43)
+layout_mode = 2
+toggle_mode = true
+text = "Types"
+expand_icon = true
+script = ExtResource("10_3dwmw")
+popup = NodePath("../PopupPanel")
+type_container = NodePath("../PopupPanel/MarginContainer/VBoxContainer/GridContainer")
+type_toggler_prefab = ExtResource("10_meotw")
+
+[node name="PopupPanel" type="PopupPanel" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/FilterOptions/Attributes/TypeSelector"]
+initial_position = 2
+size = Vector2i(18, 18)
+unresizable = false
+
+[node name="MarginContainer" type="MarginContainer" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/FilterOptions/Attributes/TypeSelector/PopupPanel"]
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 74.0
+offset_bottom = 54.0
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/FilterOptions/Attributes/TypeSelector/PopupPanel/MarginContainer"]
+layout_mode = 2
+
+[node name="ResetButton" type="Button" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/FilterOptions/Attributes/TypeSelector/PopupPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Reset"
+
+[node name="GridContainer" type="GridContainer" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/FilterOptions/Attributes/TypeSelector/PopupPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+columns = 6
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Screens/Leaderboard/MarginContainer/Content"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Screens/Leaderboard/MarginContainer/Content/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="LeaderboardItem" parent="Screens/Leaderboard/MarginContainer/Content/ScrollContainer/VBoxContainer" instance=ExtResource("20_s6vts")]
+layout_mode = 2
 
 [node name="SaveSelector" type="MarginContainer" parent="."]
 layout_mode = 1
@@ -202,6 +435,15 @@ expand_icon = true
 [connection signal="pressed" from="TabSelector/HBoxContainer/Royale" to="TabSelector" method="_on_royale_pressed"]
 [connection signal="pressed" from="TabSelector/HBoxContainer/Leaderboard" to="TabSelector" method="_on_leaderboard_pressed"]
 [connection signal="evaluated" from="Screens/Royale/RatingButtons" to="Screens/Royale" method="_on_rating_buttons_evaluated"]
+[connection signal="item_selected" from="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/MiscOptions/Attributes/Sort/SortOptions" to="Screens/Leaderboard" method="_on_sort_type_item_selected"]
+[connection signal="item_selected" from="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/MiscOptions/Attributes/Mode/SortOptions" to="Screens/Leaderboard" method="_on_sort_mode_item_selected"]
+[connection signal="pressed" from="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/MiscOptions/Attributes/Refresh/HBoxContainer/Refresh" to="Screens/Leaderboard" method="_on_refresh_requested"]
+[connection signal="toggled" from="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/MiscOptions/Attributes/Refresh/HBoxContainer/Auto-Refresh" to="Screens/Leaderboard" method="_on_auto_refresh_toggled"]
+[connection signal="toggled" from="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/MiscOptions/Attributes/Refresh/HBoxContainer/Auto-Refresh" to="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/MiscOptions/Attributes/Refresh/HBoxContainer/Auto-Refresh" method="set_active"]
+[connection signal="text_changed" from="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/FilterOptions/Attributes/Name/TextEdit" to="Screens/Leaderboard" method="_on_name_filter_changed"]
+[connection signal="selection_changed" from="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/FilterOptions/Attributes/TypeSelector/TypeOption" to="Screens/Leaderboard" method="_on_type_filter_changed"]
+[connection signal="toggled" from="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/FilterOptions/Attributes/TypeSelector/TypeOption" to="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/FilterOptions/Attributes/TypeSelector/TypeOption" method="_on_toggled"]
+[connection signal="pressed" from="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/FilterOptions/Attributes/TypeSelector/PopupPanel/MarginContainer/VBoxContainer/ResetButton" to="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/FilterOptions/Attributes/TypeSelector/TypeOption" method="_on_reset_button_pressed"]
 [connection signal="pressed" from="SaveSelector/HBoxContainer/Delete" to="SaveSelector/HBoxContainer/SaveSelector" method="_on_delete_pressed"]
 [connection signal="confirmed" from="SaveSelector/HBoxContainer/Delete/ConfirmationDialog" to="SaveSelector/HBoxContainer/SaveSelector" method="_on_confirmation_dialog_confirmed"]
 [connection signal="toggled" from="SaveSelector/HBoxContainer/New" to="SaveSelector/HBoxContainer/SaveSelector" method="_on_new_toggled"]

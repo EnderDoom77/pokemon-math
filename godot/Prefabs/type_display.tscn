@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://baceq8e8neu7o"]
 
 [ext_resource type="Theme" uid="uid://c6sr0ah1ued6b" path="res://Config/Themes/TypeDisplayTheme.theme" id="1_8kyd0"]
-[ext_resource type="Script" path="res://Scripts/type_display.gd" id="1_u2uxl"]
+[ext_resource type="Script" path="res://Scripts/UI/TypeDisplay.gd" id="1_u2uxl"]
 
 [node name="TypeDisplay1" type="PanelContainer" node_paths=PackedStringArray("label")]
 custom_minimum_size = Vector2(150, 0)

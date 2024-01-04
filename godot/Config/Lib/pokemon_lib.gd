@@ -3,11 +3,12 @@ extends Object
 
 enum PokeType {NORMAL, FIRE, WATER, GRASS, ELECTRIC, ICE, ROCK, FAIRY, DRAGON, STEEL, FIGHTING, POISON, FLYING, PSYCHIC, GROUND, BUG, GHOST, DARK, NONE}
 enum PokeStat {HEALTH, ATTACK, DEFENSE, SPECIAL_ATTACK, SPECIAL_DEFENSE, SPEED}
+enum ToggleState {FORBID, ALLOW, REQUIRE}
 const poke_type_names: Array[String] = ["normal", "fire", "water", "grass", "electric", "ice", "rock", "fairy", "dragon", "steel", "fighting", "poison", "flying", "psychic", "ground", "bug", "ghost", "dark", "none"]
 const poke_stat_names: Array[String] = ["health", "attack", "defense", "special attack", "special defense", "speed"]
 const poke_stats_in_pokedex: Dictionary = {"hp": PokeStat.HEALTH, "atk": PokeStat.ATTACK, "def": PokeStat.DEFENSE, "spa": PokeStat.SPECIAL_ATTACK, "spd": PokeStat.SPECIAL_DEFENSE, "spe": PokeStat.SPEED}
 static func stat_from_name(name: String) -> PokeStat:
-	return poke_stats_in_pokedex.get(name, -1 as PokeStat)
+	return poke_stats_in_pokedex.get(name, -1)
 static func type_from_name(name: String) -> PokeType:
 	var idx = poke_type_names.find(name.to_lower())
 	if idx == -1:
@@ -196,3 +197,10 @@ static func get_pokedex() -> Dictionary:
 	for key in data.keys():
 		_pokedex[key] = Pokemon.from_dict(key, data[key])
 	return _pokedex
+	
+static func get_default_eligible_pokemon() -> Array[PokemonLib.Pokemon]:
+	var result: Array[PokemonLib.Pokemon] = []
+	for p in get_pokedex().values():
+		if p.is_base or (p.is_regional and not (p.is_totem or p.is_gmax or p.is_mega or p.num <= 0)):
+			result.append(p)
+	return result

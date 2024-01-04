@@ -14,7 +14,7 @@ func _ready():
 		child.visible = false
 	switch_screen(current_screen)
 
-func _process(delta):
+func _process(_delta):
 	pass
 
 func switch_screen(screen_name: String):

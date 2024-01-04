@@ -1,0 +1,32 @@
+[gd_scene load_steps=3 format=3 uid="uid://cwdp8eldkoj2t"]
+
+[ext_resource type="Theme" uid="uid://d36lmlivpbqsv" path="res://Config/Themes/BaseUITheme.theme" id="1_jgvw2"]
+[ext_resource type="Script" path="res://Scripts/UI/EloInfoContainer.gd" id="2_e86n1"]
+
+[node name="EloInfoContainer" type="HBoxContainer"]
+theme = ExtResource("1_jgvw2")
+script = ExtResource("2_e86n1")
+positive_color = Color(0.32549, 1, 0.298039, 1)
+neutral_color = Color(0.54902, 0.54902, 0.54902, 1)
+negative_color = Color(1, 0.501961, 0.435294, 1)
+
+[node name="EloDisplay" type="Label" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+theme = ExtResource("1_jgvw2")
+theme_override_font_sizes/font_size = 42
+text = "500"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="Spacer" type="Control" parent="."]
+custom_minimum_size = Vector2(30, 0)
+layout_mode = 2
+
+[node name="EloDeltaDisplay" type="Label" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+theme = ExtResource("1_jgvw2")
+theme_override_font_sizes/font_size = 42
+text = "(0)"
+vertical_alignment = 1

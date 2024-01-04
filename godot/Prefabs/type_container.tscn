@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://cwt7t1q7bsx4"]
 
-[ext_resource type="Script" path="res://Scripts/type_container.gd" id="1_csyvr"]
+[ext_resource type="Script" path="res://Scripts/UI/TypeContainer.gd" id="1_csyvr"]
 [ext_resource type="PackedScene" uid="uid://baceq8e8neu7o" path="res://Prefabs/type_display.tscn" id="2_4qegn"]
 
 [node name="TypeContainer" type="HBoxContainer" node_paths=PackedStringArray("type_display_1", "type_display_2")]

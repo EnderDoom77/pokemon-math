@@ -33,5 +33,5 @@ func set_type(type: PokemonLib.PokeType):
 	self.self_modulate = self.color
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta):
+func _process(_delta):
 	pass

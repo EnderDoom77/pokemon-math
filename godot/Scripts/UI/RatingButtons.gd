@@ -26,7 +26,7 @@ func _ready():
 	
 	for score in scores:
 		var new_btn: Button = button_prefab.instantiate()
-		new_btn.set_text("%.1f" % score)
+		new_btn.set_text(MathLib.signed(score, "%.1f"))
 		create_rating_button_stylebox(new_btn, score)
 		container.add_child(new_btn)
 		print_debug("Added button for score %.1f" % score)
@@ -34,7 +34,7 @@ func _ready():
 		new_btn.pressed.connect(func(): evaluate(score))
 	
 # Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta):
+func _process(_delta):
 	pass
 
 func evaluate(score):

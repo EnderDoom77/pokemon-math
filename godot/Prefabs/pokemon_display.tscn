@@ -1,18 +1,20 @@
-[gd_scene load_steps=5 format=3 uid="uid://bvy8kmo1voh7v"]
+[gd_scene load_steps=6 format=3 uid="uid://bvy8kmo1voh7v"]
 
 [ext_resource type="Theme" uid="uid://d36lmlivpbqsv" path="res://Config/Themes/BaseUITheme.theme" id="1_f4m3y"]
-[ext_resource type="Script" path="res://Scripts/pokemon_display_large.gd" id="1_jsyqe"]
 [ext_resource type="Texture2D" uid="uid://c4uf1o04bmmym" path="res://icon.svg" id="2_f6rlm"]
+[ext_resource type="Script" path="res://Scripts/UI/PokemonDisplay.gd" id="2_sm114"]
 [ext_resource type="PackedScene" uid="uid://cwt7t1q7bsx4" path="res://Prefabs/type_container.tscn" id="3_qbur2"]
+[ext_resource type="PackedScene" uid="uid://cwdp8eldkoj2t" path="res://Prefabs/elo_info_container.tscn" id="5_v16tx"]
 
-[node name="PokemonDisplay" type="PanelContainer" node_paths=PackedStringArray("type_container", "image_display", "name_display")]
+[node name="PokemonDisplay" type="PanelContainer" node_paths=PackedStringArray("type_container", "image_display", "name_display", "elo_display")]
 offset_right = 40.0
 offset_bottom = 40.0
 theme = ExtResource("1_f4m3y")
-script = ExtResource("1_jsyqe")
+script = ExtResource("2_sm114")
 type_container = NodePath("MarginContainer/VBoxContainer/TypeContainer")
 image_display = NodePath("MarginContainer/VBoxContainer/MarginContainer/PokemonImage")
 name_display = NodePath("MarginContainer/VBoxContainer/PanelContainer/MarginContainer/PokemonName")
+elo_display = NodePath("MarginContainer/VBoxContainer/EloInfoContainer")
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
 layout_mode = 2
@@ -57,4 +59,7 @@ text = "Placeholder Text"
 horizontal_alignment = 1
 
 [node name="TypeContainer" parent="MarginContainer/VBoxContainer" instance=ExtResource("3_qbur2")]
+layout_mode = 2
+
+[node name="EloInfoContainer" parent="MarginContainer/VBoxContainer" instance=ExtResource("5_v16tx")]
 layout_mode = 2

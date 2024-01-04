@@ -24,10 +24,11 @@ func add_save(savename: String) -> void:
 	self.add_item(savename)
 	savenames.append(savename)
 
+@warning_ignore("shadowed_variable")
 func select_save(savename: String, notify: bool = false) -> void:
 	var idx = self.savenames.find(savename)
 	self.notify = notify
-	self.select(savenames.find(savename))	
+	self.select(idx)
 	self.notify = true
 	
 func remove_save(savename: String) -> bool:
@@ -47,16 +48,16 @@ func _on_new_toggled(toggled_on: bool):
 	new_button.icon = icon_cancel if toggled_on else icon_new
 
 func _on_confirm_pressed():
-	var name = savename_input.text
-	if SaveManager.is_savename_valid(name): 
-		SaveManager.create_save(name)
-		add_save(name)
-		SessionManager.get_singleton().change_savefile(name)
-		select_save(name, false)
+	var savename = savename_input.text
+	if SaveManager.is_savename_valid(savename): 
+		SaveManager.create_save(savename)
+		add_save(savename)
+		SessionManager.get_singleton().change_savefile(savename)
+		select_save(savename, false)
 		new_button.button_pressed = false
 		_on_new_toggled(false)
 
-func _on_line_edit_text_changed(new_text: String):
+func _on_line_edit_text_changed(_new_text: String):
 	confirm_button.disabled = not SaveManager.is_savename_valid(name)
 
 func _on_delete_pressed():
