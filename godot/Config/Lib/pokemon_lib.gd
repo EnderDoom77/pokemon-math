@@ -1,10 +1,10 @@
 class_name PokemonLib
 extends Object
 
-enum PokeType {NORMAL, FIRE, WATER, GRASS, ELECTRIC, ICE, ROCK, FAIRY, DRAGON, STEEL, FIGHTING, POISON, FLYING, PSYCHIC, GROUND, BUG, GHOST, DARK, NONE}
+enum PokeType {NORMAL, FIRE, WATER, GRASS, ELECTRIC, ICE, FIGHTING, POISON, GROUND, FLYING, PSYCHIC, BUG, ROCK, GHOST, DRAGON, DARK, STEEL, FAIRY, NONE}
 enum PokeStat {HEALTH, ATTACK, DEFENSE, SPECIAL_ATTACK, SPECIAL_DEFENSE, SPEED}
 enum ToggleState {FORBID, ALLOW, REQUIRE}
-const poke_type_names: Array[String] = ["normal", "fire", "water", "grass", "electric", "ice", "rock", "fairy", "dragon", "steel", "fighting", "poison", "flying", "psychic", "ground", "bug", "ghost", "dark", "none"]
+const poke_type_names: Array[String] = ["normal", "fire", "water", "grass", "electric", "ice", "fighting", "poison", "ground", "flying", "psychic", "bug", "rock", "ghost", "dragon", "dark", "steel", "fairy", "none"]
 const poke_stat_names: Array[String] = ["health", "attack", "defense", "special attack", "special defense", "speed"]
 const poke_stats_in_pokedex: Dictionary = {"hp": PokeStat.HEALTH, "atk": PokeStat.ATTACK, "def": PokeStat.DEFENSE, "spa": PokeStat.SPECIAL_ATTACK, "spd": PokeStat.SPECIAL_DEFENSE, "spe": PokeStat.SPEED}
 static func stat_from_name(name: String) -> PokeStat:
@@ -48,7 +48,7 @@ class Config extends RefCounted:
 		self.elo_gradient = MathLib.parse_gradient(elo_gradient)
 		# Create an array of default values
 		self.type_colors.assign(PokeType.values().map(func(t): return type_colors[poke_type_names[t]]))
-		self.type_images.assign(ArrayUtils.empty_array(len(PokeType.values())))
+		self.type_images.resize(len(PokeType))
 		for t in PokeType.values():
 			var path = "%s/%s.png" % [POKEMON_TYPE_PATH, poke_type_names[t]]
 			if not FileAccess.file_exists(path):
@@ -153,7 +153,7 @@ class Pokemon extends RefCounted:
 		self.gender = gender
 		self.egg_groups.assign(egg_groups)
 		self.tier = tier
-		self.formes = ArrayUtils.packed_string_array_map(forme.split("-", false), func(s:String): return s.to_lower())
+		self.formes = CollectionUtils.packed_string_array_map(forme.split("-", false), func(s:String): return s.to_lower())
 
 		# Postprocessing variables
 		self.is_regional = false
@@ -198,9 +198,23 @@ static func get_pokedex() -> Dictionary:
 		_pokedex[key] = Pokemon.from_dict(key, data[key])
 	return _pokedex
 	
-static func get_default_eligible_pokemon() -> Array[PokemonLib.Pokemon]:
-	var result: Array[PokemonLib.Pokemon] = []
+static func get_default_eligible_pokemon() -> Array[Pokemon]:
+	var result: Array[Pokemon] = []
 	for p in get_pokedex().values():
 		if p.is_base or (p.is_regional and not (p.is_totem or p.is_gmax or p.is_mega or p.num <= 0)):
 			result.append(p)
+	return result
+	
+## Gets the map from each type to its effectiveness against a pokemon of the given types
+static func get_effectiveness(types: Array[PokeType], config: Config) -> Array[float]:
+	var result_dict := {}
+	for attacking_type in config.types:
+		var effect := 1.0
+		for defending_type in types:
+			effect *= config.type_effectiveness[attacking_type][defending_type]
+		result_dict[attacking_type] = effect
+	var result: Array[float] = []
+	result.resize(len(config.types))
+	for t in config.types:
+		result[t] = result_dict[t]
 	return result

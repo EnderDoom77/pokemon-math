@@ -1,13 +1,13 @@
-[gd_scene load_steps=6 format=3 uid="uid://dsixfsfbriiqa"]
+[gd_scene load_steps=7 format=3 uid="uid://dsixfsfbriiqa"]
 
 [ext_resource type="Script" path="res://Scripts/UI/PokemonDisplay.gd" id="1_3ol6t"]
 [ext_resource type="Texture2D" uid="uid://c4uf1o04bmmym" path="res://icon.svg" id="2_dae2m"]
 [ext_resource type="Theme" uid="uid://d36lmlivpbqsv" path="res://Config/Themes/BaseUITheme.theme" id="3_4xtxn"]
 [ext_resource type="PackedScene" uid="uid://cwt7t1q7bsx4" path="res://Prefabs/type_container.tscn" id="4_d0mo5"]
 [ext_resource type="PackedScene" uid="uid://cwdp8eldkoj2t" path="res://Prefabs/elo_info_container.tscn" id="5_4b4n2"]
+[ext_resource type="Texture2D" uid="uid://cfitdsa4hnsqm" path="res://Media/Images/UI/Info.png" id="6_050ql"]
 
 [node name="LeaderboardItem" type="PanelContainer" node_paths=PackedStringArray("type_container", "image_display", "name_display", "elo_display")]
-visible = false
 custom_minimum_size = Vector2(0, 100)
 script = ExtResource("1_3ol6t")
 type_container = NodePath("MarginContainer/HBoxContainer/VBoxContainer/TypeContainer")
@@ -53,3 +53,15 @@ layout_mode = 2
 [node name="EloInfoContainer" parent="MarginContainer/HBoxContainer" instance=ExtResource("5_4b4n2")]
 layout_mode = 2
 size_flags_horizontal = 3
+
+[node name="InfoButtonContainer" type="VBoxContainer" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="Button" type="Button" parent="MarginContainer/HBoxContainer/InfoButtonContainer"]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+icon = ExtResource("6_050ql")
+flat = true
+expand_icon = true
+
+[connection signal="pressed" from="MarginContainer/HBoxContainer/InfoButtonContainer/Button" to="." method="show_detailed_info"]

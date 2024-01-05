@@ -4,7 +4,7 @@ extends Object
 static func parse_gradient(key_value_pairs: Dictionary) -> Gradient:
 	var keys = key_value_pairs.keys()
 	keys.sort()
-	var values = ArrayUtils.dictionary_map(keys, key_value_pairs)
+	var values = CollectionUtils.dictionary_map(keys, key_value_pairs)
 	var gradient: Gradient = Gradient.new()
 	gradient.offsets = keys
 	gradient.colors = values
@@ -105,7 +105,7 @@ static func max_contrast(color: Color, tint: float = 0) -> Color:
 	var alpha = color.a
 	var lightness_options = [tint * 50, (2 - tint) * 50]
 	var resulting_colors = lightness_options.map(func(l): return Color.from_ok_hsl(hue, sat, l, alpha))
-	return ArrayUtils.arg_max(resulting_colors, func(c): return contrast(color, c))
+	return CollectionUtils.arg_max(resulting_colors, func(c): return contrast(color, c))
 
 static func calc_elo_delta(own_elo: float, opponent_elo: float, k_value: float, result_score: float) -> float:
 	var q_own = pow(10, own_elo/400.0)

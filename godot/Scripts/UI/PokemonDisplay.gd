@@ -71,7 +71,10 @@ func set_data_simple(data_name, data: String):
 		return
 	extra_data[data_name] = data
 	display.text = data
-	
+
+func show_detailed_info():
+	var info_displayer = PokeInfoPopup.instance.set_and_show(pokemon)
+
 @warning_ignore("shadowed_variable")
 func set_elo(elo: float):
 	self.elo = elo

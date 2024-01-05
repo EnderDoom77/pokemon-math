@@ -1,4 +1,4 @@
-[gd_scene load_steps=25 format=3 uid="uid://bomvmtelyau33"]
+[gd_scene load_steps=31 format=3 uid="uid://bomvmtelyau33"]
 
 [ext_resource type="Theme" uid="uid://d36lmlivpbqsv" path="res://Config/Themes/BaseUITheme.theme" id="1_c66jc"]
 [ext_resource type="Script" path="res://Scripts/UI/TabSelector.gd" id="2_7lpef"]
@@ -24,6 +24,12 @@
 [ext_resource type="Texture2D" uid="uid://c3c8odfo8cho" path="res://Media/Images/UI/Refresh.png" id="15_m1tjl"]
 [ext_resource type="Script" path="res://Scripts/FX/ActiveShow.gd" id="16_fvmit"]
 [ext_resource type="PackedScene" uid="uid://dsixfsfbriiqa" path="res://Prefabs/leaderboard_item.tscn" id="20_s6vts"]
+[ext_resource type="Script" path="res://Scripts/UI/InfoPopup.gd" id="25_ixpr6"]
+[ext_resource type="Script" path="res://Scripts/UI/PokemonExtendedInfoDisplay.gd" id="25_lido8"]
+[ext_resource type="Texture2D" uid="uid://c4uf1o04bmmym" path="res://icon.svg" id="26_rgkib"]
+[ext_resource type="PackedScene" uid="uid://cwt7t1q7bsx4" path="res://Prefabs/type_container.tscn" id="27_k0sc2"]
+[ext_resource type="PackedScene" uid="uid://cwdp8eldkoj2t" path="res://Prefabs/elo_info_container.tscn" id="28_fci35"]
+[ext_resource type="PackedScene" uid="uid://68t818i2cuxk" path="res://Prefabs/effectiveness_tab.tscn" id="29_s5slx"]
 
 [node name="UI" type="Control"]
 layout_mode = 3
@@ -332,7 +338,7 @@ type_toggler_prefab = ExtResource("10_meotw")
 
 [node name="PopupPanel" type="PopupPanel" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/FilterOptions/Attributes/TypeSelector"]
 initial_position = 2
-size = Vector2i(18, 18)
+size = Vector2i(78, 58)
 unresizable = false
 
 [node name="MarginContainer" type="MarginContainer" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/FilterOptions/Attributes/TypeSelector/PopupPanel"]
@@ -365,6 +371,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="LeaderboardItem" parent="Screens/Leaderboard/MarginContainer/Content/ScrollContainer/VBoxContainer" instance=ExtResource("20_s6vts")]
+visible = false
 layout_mode = 2
 
 [node name="SaveSelector" type="MarginContainer" parent="."]
@@ -431,6 +438,69 @@ custom_minimum_size = Vector2(32, 0)
 layout_mode = 2
 icon = ExtResource("9_a02h8")
 expand_icon = true
+
+[node name="PokemonInfoDisplay" type="PopupPanel" parent="." node_paths=PackedStringArray("pokemon_display")]
+initial_position = 2
+size = Vector2i(330, 429)
+visible = true
+unresizable = false
+borderless = false
+script = ExtResource("25_ixpr6")
+pokemon_display = NodePath("MarginContainer/VBoxContainer")
+
+[node name="MarginContainer" type="MarginContainer" parent="PokemonInfoDisplay"]
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 326.0
+offset_bottom = 425.0
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PokemonInfoDisplay/MarginContainer" node_paths=PackedStringArray("effectiveness_container", "type_container", "image_display", "name_display", "elo_display")]
+layout_mode = 2
+script = ExtResource("25_lido8")
+effectiveness_container = NodePath("DefensiveInfo")
+effectiveness_prefab = ExtResource("29_s5slx")
+type_container = NodePath("TypeContainer")
+image_display = NodePath("Image")
+name_display = NodePath("Pokemon Name")
+elo_display = NodePath("EloInfoContainer")
+
+[node name="Title" type="Label" parent="PokemonInfoDisplay/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Pokemon Info"
+horizontal_alignment = 1
+
+[node name="Image" type="TextureRect" parent="PokemonInfoDisplay/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 150)
+layout_mode = 2
+texture = ExtResource("26_rgkib")
+expand_mode = 3
+stretch_mode = 5
+
+[node name="Pokemon Name" type="Label" parent="PokemonInfoDisplay/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "NAME"
+horizontal_alignment = 1
+
+[node name="TypeContainer" parent="PokemonInfoDisplay/MarginContainer/VBoxContainer" instance=ExtResource("27_k0sc2")]
+layout_mode = 2
+
+[node name="EloInfoContainer" parent="PokemonInfoDisplay/MarginContainer/VBoxContainer" instance=ExtResource("28_fci35")]
+layout_mode = 2
+
+[node name="DefensiveLabel" type="Label" parent="PokemonInfoDisplay/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Defensive Effectiveness"
+horizontal_alignment = 1
+
+[node name="DefensiveInfo" type="VBoxContainer" parent="PokemonInfoDisplay/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="EffectivenessTab" parent="PokemonInfoDisplay/MarginContainer/VBoxContainer/DefensiveInfo" instance=ExtResource("29_s5slx")]
+layout_mode = 2
 
 [connection signal="pressed" from="TabSelector/HBoxContainer/Royale" to="TabSelector" method="_on_royale_pressed"]
 [connection signal="pressed" from="TabSelector/HBoxContainer/Leaderboard" to="TabSelector" method="_on_leaderboard_pressed"]

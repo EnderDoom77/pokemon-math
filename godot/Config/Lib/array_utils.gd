@@ -1,4 +1,4 @@
-class_name ArrayUtils
+class_name CollectionUtils
 
 extends Object
 
@@ -22,8 +22,8 @@ static func packed_string_array_map(string_array: PackedStringArray, function: C
 
 static func empty_array(length: int, value: Variant = null) -> Array[Variant]:
 	var result = []
-	for i in range(length):
-		result.append(value)
+	result.resize(length)
+	if value != null: result.fill(value)
 	return result
 
 static func arg_max(array: Array[Variant], key: Callable) -> Variant:
@@ -36,3 +36,20 @@ static func arg_max(array: Array[Variant], key: Callable) -> Variant:
 			max_value = new_value
 			max_arg = array[i]
 	return max_arg
+	
+## Converts a [Dictionary]\[[K],[V]\] into a flipped [Dictionary]\[[V],[Array]\[[K]\]\]
+static func invert_dictionary(dict: Dictionary) -> Dictionary:
+	var result := {}
+	for key in dict:
+		var value = dict[key]
+		if value not in result:
+			result[value] = []
+		result[value].append(key)
+	return result
+	
+## Converts an [Array]\[[V]\] to a [Dictionary]\[[int],[V]\], where the keys are the index in the array
+static func array_to_dictionary(array: Array) -> Dictionary:
+	var result := {}
+	for i in range(len(array)):
+		result[i] = array[i]
+	return result
