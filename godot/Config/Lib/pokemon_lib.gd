@@ -1,11 +1,12 @@
 class_name PokemonLib
 extends Object
 
-enum PokeType {NORMAL, FIRE, WATER, GRASS, ELECTRIC, ICE, FIGHTING, POISON, GROUND, FLYING, PSYCHIC, BUG, ROCK, GHOST, DRAGON, DARK, STEEL, FAIRY, NONE}
+enum PokeType {NORMAL, FIRE, WATER, GRASS, ELECTRIC, ICE, FIGHTING, POISON, GROUND, FLYING, PSYCHIC, BUG, ROCK, GHOST, DRAGON, DARK, STEEL, FAIRY, NONE, BIRD}
 enum PokeStat {HEALTH, ATTACK, DEFENSE, SPECIAL_ATTACK, SPECIAL_DEFENSE, SPEED}
 enum ToggleState {FORBID, ALLOW, REQUIRE}
-const poke_type_names: Array[String] = ["normal", "fire", "water", "grass", "electric", "ice", "fighting", "poison", "ground", "flying", "psychic", "bug", "rock", "ghost", "dragon", "dark", "steel", "fairy", "none"]
+const poke_type_names: Array[String] = ["normal", "fire", "water", "grass", "electric", "ice", "fighting", "poison", "ground", "flying", "psychic", "bug", "rock", "ghost", "dragon", "dark", "steel", "fairy", "none", "bird"]
 const poke_stat_names: Array[String] = ["health", "attack", "defense", "special attack", "special defense", "speed"]
+const poke_stat_abbrev: Array[String] = ["hp", "atk", "def", "spa", "spd", "spe"]
 const poke_stats_in_pokedex: Dictionary = {"hp": PokeStat.HEALTH, "atk": PokeStat.ATTACK, "def": PokeStat.DEFENSE, "spa": PokeStat.SPECIAL_ATTACK, "spd": PokeStat.SPECIAL_DEFENSE, "spe": PokeStat.SPEED}
 static func stat_from_name(name: String) -> PokeStat:
 	return poke_stats_in_pokedex.get(name, -1)
@@ -33,21 +34,28 @@ class Config extends RefCounted:
 	var types: Array[PokeType]
 	var type_images: Array[CompressedTexture2D]
 	var type_colors: Array[Color]
+	## A dictionary mapping gender abbreviations (M,F,N) to [Color]s
+	var gender_colors: Dictionary
 	var type_effectiveness: Array[Array]
 	var elo_gradient: Gradient
+	var ability_descriptions: Dictionary
 	
 	@warning_ignore("shadowed_variable")
 	func _init(
 		types: Array,
 		type_colors: Dictionary, 
+		gender_colors: Dictionary,
 		type_effectiveness: Array,
-		elo_gradient: Dictionary):
+		elo_gradient: Dictionary,
+		ability_descriptions: Dictionary):
 		
 		self.types.assign(types.map(PokemonLib.type_from_name))
 		self.type_effectiveness.assign(type_effectiveness)
 		self.elo_gradient = MathLib.parse_gradient(elo_gradient)
 		# Create an array of default values
 		self.type_colors.assign(PokeType.values().map(func(t): return type_colors[poke_type_names[t]]))
+		for c in gender_colors:
+			self.gender_colors[c] = Color.from_string(gender_colors[c], Color.BLACK)
 		self.type_images.resize(len(PokeType))
 		for t in PokeType.values():
 			var path = "%s/%s.png" % [POKEMON_TYPE_PATH, poke_type_names[t]]
@@ -55,9 +63,14 @@ class Config extends RefCounted:
 				push_error("Unable to find poketype icon file at path %s" % path)
 				continue
 			self.type_images[t] = PokemonLib.load_image_texture(path)
+		self.ability_descriptions = ability_descriptions
+
+	func get_ability_description(ability_name: String) -> String:
+		var normalized_name = ability_name.replace(" ", "_").to_lower()
+		return self.ability_descriptions.get(normalized_name, "[i]Unavailable Ability Description[/i]")
 
 	static func from_dict(data : Dictionary) -> Config:
-		return Config.new(data["types"], data["type_colors"], data["type_effectiveness"], data["elo_gradient"])	
+		return Config.new(data["types"], data["type_colors"], data["gender_colors"], data["type_effectiveness"], data["elo_gradient"], data["abilities"])	
 
 static var _config: Config = null
 static func get_config() -> Config:
@@ -70,41 +83,45 @@ static func get_config() -> Config:
 	return _config
 
 class Pokemon extends RefCounted:
-	# A normalized name containing only alphanumeric
+	## A normalized name containing only alphanumeric
 	var id: String
-	# The numeric Pokedex id of the pokemon
+	## The numeric Pokedex id of the pokemon
 	var num: int
-	# The stylized English name of the pokemon
+	## The stylized English name of the pokemon
 	var name: String
-	# The type(s) of the pokemon
+	## The type(s) of the pokemon
 	var types: Array[PokemonLib.PokeType]
-	# Dictionary linking stat names to their base value
+	## Dictionary linking stat names to their base value
 	var base_stats: Array[int]
-	# Strings normalized by `normalize_name` of the starting ability values
+	## Strings normalized by `normalize_name` of the starting ability values
 	var abilities: Array[String]
-	# The height in meters
+	## A set containing the name of any of the abilities [@Pokemon.@abilities] which are hidden
+	var hidden_abilities: MathLib.Set
+	## The height in meters
 	var heightm: float
-	# The weight in kilograms
+	## The weight in kilograms
 	var weightkg: float
-	# A descriptive single color for the pokemon
+	## A descriptive single color for the pokemon
 	var color: String
-	# The specific gender of this pokemon, if forced to be one (M,F) or is genderless (N), otherwise this is empty
+	## The specific gender of this pokemon, if forced to be one (M,F) or is genderless (N), otherwise this is empty
 	var gender: String
-	# Any special forms that apply to this variant
+	## The probabilities for each gender for a pokemon of this species
+	var gender_ratio: Dictionary
+	## Any special forms that apply to this variant
 	var formes: Array[String]
-	# Any other pokemon that this pokemon can evolve into
+	## Any other pokemon that this pokemon can evolve into
 	var evolutions: Array[String]
-	# A pokemon (if any) that this pokenon evolves from
+	## A pokemon (if any) that this pokenon evolves from
 	var preevolution: String
-	# The type of evolution that this pokemon has (e.g. level, levelFriendship, useItem, trade, other...)
+	## The type of evolution that this pokemon has (e.g. level, levelFriendship, useItem, trade, other...)
 	var evolution_type: String
-	# The condition (if any) for this pokemon to evolve
+	## The condition (if any) for this pokemon to evolve
 	var evolution_condition: String
-	# The level required for this pokemon to evolve. -1 if unknown or no level is required
+	## The level required for this pokemon to evolve. -1 if unknown or no level is required
 	var evolution_level: int 
-	# The egg groups that this pokemon falls into
+	## The egg groups that this pokemon falls into
 	var egg_groups: Array[String]
-	# Competitive tier of the pokemon
+	## Competitive tier of the pokemon
 	var tier: String
 	
 	var is_regional: bool = false
@@ -123,7 +140,7 @@ class Pokemon extends RefCounted:
 	func _init( 
 		id: String, num: int, name: String, types: Array,
 		base_stats: Dictionary = {}, abilities: Dictionary = {},
-		heightm: float = -1, weightkg: float = -1, color: String = "", gender: String = "", forme: String = "",
+		heightm: float = -1, weightkg: float = -1, color: String = "", gender: String = "", gender_ratio: Dictionary = {}, forme: String = "",
 		evos: Array = [], prevo: String = "", evo_type: String = "level", evo_condition: String = "", evo_level: int = -1, 
 		egg_groups: Array = [], tier: String = ""):
 		
@@ -141,7 +158,10 @@ class Pokemon extends RefCounted:
 				print_debug("Failed to recognize stat for pokemeon %s: \"%s\"" % [self.id, stat])
 			self.base_stats[poke_stats_in_pokedex[stat]] = int(base_stats[stat])
 		
-		self.abilities.assign(abilities.values().map(PokemonLib.normalize_name))
+		self.abilities.assign(abilities.values())
+		self.hidden_abilities = MathLib.Set.new()
+		if "H" in abilities:
+			self.hidden_abilities.add(abilities["H"])
 		self.heightm = heightm
 		self.weightkg = weightkg
 		self.color = color 
@@ -151,6 +171,7 @@ class Pokemon extends RefCounted:
 		self.evolution_condition = evo_condition
 		self.evolution_level = evo_level
 		self.gender = gender
+		self.gender_ratio = gender_ratio
 		self.egg_groups.assign(egg_groups)
 		self.tier = tier
 		self.formes = CollectionUtils.packed_string_array_map(forme.split("-", false), func(s:String): return s.to_lower())
@@ -182,7 +203,7 @@ class Pokemon extends RefCounted:
 	static func from_dict(pokemon_id: String, data: Dictionary) -> Pokemon:
 		return Pokemon.new(pokemon_id, data["num"], data["name"], data["types"], 
 			data.get("baseStats", {}), data.get("abilities", {}), 
-			data.get("heightm", -1), data.get("weightkg", -1), data.get("color", ""), data.get("gender", ""), data.get("forme", ""),
+			data.get("heightm", -1), data.get("weightkg", -1), data.get("color", ""), data.get("gender", ""), data.get("genderRatio", {}), data.get("forme", ""),
 			data.get("evos", []), data.get("prevo", ""), data.get("evoTypes", "level"), data.get("evoCondition", ""), data.get("evoLevel", -1),
 			data.get("groups", []), data.get("tier", "")
 		)
@@ -218,3 +239,8 @@ static func get_effectiveness(types: Array[PokeType], config: Config) -> Array[f
 	for t in config.types:
 		result[t] = result_dict[t]
 	return result
+	
+static func is_allowed_by_filter(filter_mode: ToggleState, property: bool):
+	if filter_mode == ToggleState.ALLOW: return true
+	var allowed = (filter_mode == ToggleState.REQUIRE)
+	return allowed == property

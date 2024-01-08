@@ -27,7 +27,7 @@ func _ready():
 	if active:
 		activate()
 
-func _process(delta):
+func _process(_delta):
 	pass
 
 @warning_ignore("shadowed_variable")

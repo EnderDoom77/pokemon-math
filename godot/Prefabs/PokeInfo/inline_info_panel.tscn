@@ -1,0 +1,41 @@
+[gd_scene load_steps=3 format=3 uid="uid://cndfpmfrflndk"]
+
+[ext_resource type="Script" path="res://Scripts/UI/GenericInfoDisplay.gd" id="1_g5iao"]
+[ext_resource type="Theme" uid="uid://d36lmlivpbqsv" path="res://Config/Themes/BaseUITheme.theme" id="2_felf3"]
+
+[node name="InlineInfoPanel" type="PanelContainer" node_paths=PackedStringArray("title_label", "description_label")]
+script = ExtResource("1_g5iao")
+title_label = NodePath("MarginContainer/HBoxContainer/TitlePanel/MarginContainer/Title")
+description_label = NodePath("MarginContainer/HBoxContainer/MarginContainer/Label")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="TitlePanel" type="PanelContainer" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/HBoxContainer/TitlePanel"]
+layout_mode = 2
+
+[node name="Title" type="RichTextLabel" parent="MarginContainer/HBoxContainer/TitlePanel/MarginContainer"]
+layout_mode = 2
+bbcode_enabled = true
+text = "Title"
+fit_content = true
+autowrap_mode = 0
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="RichTextLabel" parent="MarginContainer/HBoxContainer/MarginContainer"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+size_flags_vertical = 4
+theme = ExtResource("2_felf3")
+theme_type_variation = &"SmallTextLabel"
+bbcode_enabled = true
+text = "Description"
+fit_content = true

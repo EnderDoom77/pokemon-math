@@ -10,10 +10,11 @@ enum SortType {NAME, NUMBER, ELO, ELO_DELTA}
 var pokemon_displays: Array[PokemonDisplay]
 var pokedex: Dictionary
 
-var sort_type: SortType = SortType.NAME
-var sort_ascending: bool = true
+var sort_type: SortType = SortType.ELO
+var sort_ascending: bool = false
 var filter_types: Dictionary
 var filter_name: String = ""
+var filter_pure: PokemonLib.ToggleState = PokemonLib.ToggleState.ALLOW
 var filter_eligible: PokemonLib.ToggleState = PokemonLib.ToggleState.REQUIRE
 
 func _ready():
@@ -37,7 +38,6 @@ func get_display(index: int) -> PokemonDisplay:
 	return pokemon_displays[index]
 
 func update_item_display():
-	var save_data: SaveManager.SaveData = SessionManager.get_singleton().current_save
 	var all_pokemon: Array[PokemonLib.Pokemon] = []
 	all_pokemon.assign(pokedex.values())
 	var filtered: Array[PokemonLib.Pokemon] = get_filtered(all_pokemon)
@@ -55,41 +55,52 @@ func get_filtered(pokemon_list: Array[PokemonLib.Pokemon]) -> Array[PokemonLib.P
 	
 func filter_pokemon(pokemon: PokemonLib.Pokemon, save_eligible: MathLib.Set) -> bool:
 	var config: PokemonLib.Config = PokemonLib.get_config()
-	if filter_eligible != PokemonLib.ToggleState.ALLOW:
-		var contained = save_eligible.contains(pokemon.id)
-		var allowed = filter_eligible == PokemonLib.ToggleState.REQUIRE
-		if allowed != contained: return false
+	if not PokemonLib.is_allowed_by_filter(filter_eligible, save_eligible.contains(pokemon.id)):
+		return false
 	if filter_name and not PokemonLib.normalize_name(pokemon.id).contains(filter_name):
 		return false
+	if not PokemonLib.is_allowed_by_filter(filter_pure, len(pokemon.types) == 1):
+		return false
 	for type in config.types:
-		if filter_types[type] == PokemonLib.ToggleState.ALLOW: continue
-		var contained = type in pokemon.types
-		var allowed = filter_types[type] == PokemonLib.ToggleState.REQUIRE
-		if allowed != contained: return false
+		if not PokemonLib.is_allowed_by_filter(filter_types[type], type in pokemon.types):
+			return false
 	return true
+
+## Constructs a comparer between multiple pokemon from a function that gets a single key attribute given a pokemon
+func pokemon_comparer(key: Callable, invert: bool = false) -> Callable:
+	return func(p1: PokemonLib.Pokemon, p2: PokemonLib.Pokemon):
+		var k1 = key.call(p1)
+		var k2 = key.call(p2)
+		if k1 == k2:
+			return default_pokemon_comparer(p1,p2,invert)
+		else:
+			return (k1 < k2) != invert
+		
+func default_pokemon_comparer(p1: PokemonLib.Pokemon, p2: PokemonLib.Pokemon, invert: bool = false):
+	return (p1.id < p2.id) != invert
 
 ## Sorts a given list in-place by the current leaderboard sort settings.
 func sort_pokemon(list: Array[PokemonLib.Pokemon]):
-	var comparer: Callable
+	var key: Callable
 	match sort_type:
 		SortType.NAME:
-			comparer = func(a: PokemonLib.Pokemon, b: PokemonLib.Pokemon) -> bool:
-				return (a.name.to_lower() < b.name.to_lower()) == sort_ascending # same as XNOR
+			key = func(p: PokemonLib.Pokemon): return p.name
 		SortType.NUMBER:
-			comparer = func(a: PokemonLib.Pokemon, b: PokemonLib.Pokemon) -> bool:
-				return (a.num < b.num) == sort_ascending
+			key = func(p: PokemonLib.Pokemon): return p.num
 		SortType.ELO:
 			var elo_lookup: Dictionary = build_elo_lookup_dictionary(list.map(func(p): return p.id))
-			comparer = func(a: PokemonLib.Pokemon, b: PokemonLib.Pokemon) -> bool:
-				return (elo_lookup[a.id].elo < elo_lookup[b.id].elo) == sort_ascending
+			var default_elo = SaveManager.PokeEloData.new()
+			key = func(p: PokemonLib.Pokemon):
+				return elo_lookup.get(p.id, default_elo).elo
 		SortType.ELO_DELTA:
 			var elo_lookup: Dictionary = build_elo_lookup_dictionary(list.map(func(p): return p.id))
-			comparer = func(a: PokemonLib.Pokemon, b: PokemonLib.Pokemon) -> bool:
-				return (abs(elo_lookup[a.id].elo_delta()) < abs(elo_lookup[b.id].elo_delta())) == sort_ascending
+			var default_elo = SaveManager.PokeEloData.new()
+			key = func(p: PokemonLib.Pokemon):
+				return abs(elo_lookup.get(p.id, default_elo).elo_delta())
 		_:
 			push_error("Attempting to sort with some invalid sort type value: %d" % sort_type)
 			return
-	list.sort_custom(comparer)
+	list.sort_custom(pokemon_comparer(key,!sort_ascending))
 
 ## Returns a dictionary linking the pokemon IDs from `keys` to elo information objects.
 func build_elo_lookup_dictionary(keys: Array) -> Dictionary:
@@ -150,6 +161,10 @@ func _on_sort_type_item_selected(index: int):
 const _INTERNAL_SORT_MODE_ITEMS = ["ascending", "descending"]
 func _on_sort_mode_item_selected(index: int):
 	_on_sort_mode_changed(_INTERNAL_SORT_MODE_ITEMS[index])
+
+func _on_filter_purity_toggled(toggle_state: PokemonLib.ToggleState):
+	filter_pure = toggle_state
+	if auto_refresh: update_item_display()
 
 func on_save_changed():
 	update_item_display()

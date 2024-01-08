@@ -1,4 +1,4 @@
-[gd_scene load_steps=31 format=3 uid="uid://bomvmtelyau33"]
+[gd_scene load_steps=37 format=3 uid="uid://bomvmtelyau33"]
 
 [ext_resource type="Theme" uid="uid://d36lmlivpbqsv" path="res://Config/Themes/BaseUITheme.theme" id="1_c66jc"]
 [ext_resource type="Script" path="res://Scripts/UI/TabSelector.gd" id="2_7lpef"]
@@ -24,12 +24,18 @@
 [ext_resource type="Texture2D" uid="uid://c3c8odfo8cho" path="res://Media/Images/UI/Refresh.png" id="15_m1tjl"]
 [ext_resource type="Script" path="res://Scripts/FX/ActiveShow.gd" id="16_fvmit"]
 [ext_resource type="PackedScene" uid="uid://dsixfsfbriiqa" path="res://Prefabs/leaderboard_item.tscn" id="20_s6vts"]
+[ext_resource type="Texture2D" uid="uid://bxrsk67ahfoq0" path="res://Media/Images/UI/Impure.png" id="21_1wsy1"]
+[ext_resource type="Script" path="res://Scripts/UI/FilterToggle.gd" id="21_18mql"]
+[ext_resource type="Texture2D" uid="uid://kmstspdgcfbh" path="res://Media/Images/UI/AnyPurity.png" id="22_qx50l"]
+[ext_resource type="Texture2D" uid="uid://d4fcox6f2lfij" path="res://Media/Images/UI/Pure.png" id="23_bky81"]
 [ext_resource type="Script" path="res://Scripts/UI/InfoPopup.gd" id="25_ixpr6"]
 [ext_resource type="Script" path="res://Scripts/UI/PokemonExtendedInfoDisplay.gd" id="25_lido8"]
 [ext_resource type="Texture2D" uid="uid://c4uf1o04bmmym" path="res://icon.svg" id="26_rgkib"]
 [ext_resource type="PackedScene" uid="uid://cwt7t1q7bsx4" path="res://Prefabs/type_container.tscn" id="27_k0sc2"]
 [ext_resource type="PackedScene" uid="uid://cwdp8eldkoj2t" path="res://Prefabs/elo_info_container.tscn" id="28_fci35"]
 [ext_resource type="PackedScene" uid="uid://68t818i2cuxk" path="res://Prefabs/effectiveness_tab.tscn" id="29_s5slx"]
+[ext_resource type="PackedScene" uid="uid://cndfpmfrflndk" path="res://Prefabs/PokeInfo/inline_info_panel.tscn" id="35_7s8v3"]
+[ext_resource type="PackedScene" uid="uid://djh1aihh285fy" path="res://Prefabs/PokeInfo/multiline_info_panel.tscn" id="36_8d71n"]
 
 [node name="UI" type="Control"]
 layout_mode = 3
@@ -216,7 +222,7 @@ size_flags_vertical = 3
 theme = ExtResource("1_c66jc")
 expand_icon = true
 item_count = 4
-selected = 0
+selected = 2
 popup/item_0/text = "Name"
 popup/item_0/icon = ExtResource("8_km2c5")
 popup/item_0/id = 0
@@ -246,7 +252,7 @@ size_flags_vertical = 3
 theme = ExtResource("1_c66jc")
 expand_icon = true
 item_count = 2
-selected = 0
+selected = 1
 allow_reselect = true
 popup/item_0/text = "Ascending"
 popup/item_0/icon = ExtResource("12_a7efm")
@@ -362,6 +368,36 @@ text = "Reset"
 layout_mode = 2
 columns = 6
 
+[node name="PureType" type="VBoxContainer" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/FilterOptions/Attributes"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/FilterOptions/Attributes/PureType"]
+layout_mode = 2
+theme = ExtResource("1_c66jc")
+theme_type_variation = &"LabelLegendSmall"
+text = "Pure:"
+
+[node name="FilterToggler" type="Button" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/FilterOptions/Attributes/PureType" node_paths=PackedStringArray("overlay_image")]
+custom_minimum_size = Vector2(40, 0)
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("21_18mql")
+overlay_image = NodePath("FilterStateDisplay")
+overlay_forbidden = ExtResource("21_1wsy1")
+overlay_allowed = ExtResource("22_qx50l")
+overlay_required = ExtResource("23_bky81")
+
+[node name="FilterStateDisplay" type="TextureRect" parent="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/FilterOptions/Attributes/PureType/FilterToggler"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("22_qx50l")
+expand_mode = 1
+stretch_mode = 5
+
 [node name="ScrollContainer" type="ScrollContainer" parent="Screens/Leaderboard/MarginContainer/Content"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -441,66 +477,117 @@ expand_icon = true
 
 [node name="PokemonInfoDisplay" type="PopupPanel" parent="." node_paths=PackedStringArray("pokemon_display")]
 initial_position = 2
-size = Vector2i(330, 429)
-visible = true
+size = Vector2i(730, 429)
 unresizable = false
 borderless = false
 script = ExtResource("25_ixpr6")
-pokemon_display = NodePath("MarginContainer/VBoxContainer")
+pokemon_display = NodePath("MarginContainer/HBoxContainer/VBoxContainer")
 
 [node name="MarginContainer" type="MarginContainer" parent="PokemonInfoDisplay"]
 offset_left = 4.0
 offset_top = 4.0
-offset_right = 326.0
+offset_right = 726.0
 offset_bottom = 425.0
 theme_override_constants/margin_left = 5
 theme_override_constants/margin_top = 5
 theme_override_constants/margin_right = 5
 theme_override_constants/margin_bottom = 5
 
-[node name="VBoxContainer" type="VBoxContainer" parent="PokemonInfoDisplay/MarginContainer" node_paths=PackedStringArray("effectiveness_container", "type_container", "image_display", "name_display", "elo_display")]
+[node name="HBoxContainer" type="HBoxContainer" parent="PokemonInfoDisplay/MarginContainer"]
 layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PokemonInfoDisplay/MarginContainer/HBoxContainer" node_paths=PackedStringArray("effectiveness_container", "ability_display", "stats_display", "height_display", "weight_display", "gender_ratio_display", "prevo_display", "evos_display", "type_container", "image_display", "name_display", "elo_display")]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+size_flags_horizontal = 3
 script = ExtResource("25_lido8")
 effectiveness_container = NodePath("DefensiveInfo")
 effectiveness_prefab = ExtResource("29_s5slx")
+ability_display = NodePath("../ExtendedInfoScrollArea/ExtendedInfo/Ability")
+stats_display = NodePath("../ExtendedInfoScrollArea/ExtendedInfo/Stats")
+height_display = NodePath("../ExtendedInfoScrollArea/ExtendedInfo/Height")
+weight_display = NodePath("../ExtendedInfoScrollArea/ExtendedInfo/Weight")
+gender_ratio_display = NodePath("../ExtendedInfoScrollArea/ExtendedInfo/GenderRatio")
+prevo_display = NodePath("../ExtendedInfoScrollArea/ExtendedInfo/PrevoDisplay")
+evos_display = NodePath("../ExtendedInfoScrollArea/ExtendedInfo/EvoDisplay")
 type_container = NodePath("TypeContainer")
 image_display = NodePath("Image")
 name_display = NodePath("Pokemon Name")
 elo_display = NodePath("EloInfoContainer")
 
-[node name="Title" type="Label" parent="PokemonInfoDisplay/MarginContainer/VBoxContainer"]
+[node name="Title" type="Label" parent="PokemonInfoDisplay/MarginContainer/HBoxContainer/VBoxContainer"]
 layout_mode = 2
 text = "Pokemon Info"
 horizontal_alignment = 1
 
-[node name="Image" type="TextureRect" parent="PokemonInfoDisplay/MarginContainer/VBoxContainer"]
+[node name="Image" type="TextureRect" parent="PokemonInfoDisplay/MarginContainer/HBoxContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 150)
 layout_mode = 2
 texture = ExtResource("26_rgkib")
 expand_mode = 3
 stretch_mode = 5
 
-[node name="Pokemon Name" type="Label" parent="PokemonInfoDisplay/MarginContainer/VBoxContainer"]
+[node name="Pokemon Name" type="Label" parent="PokemonInfoDisplay/MarginContainer/HBoxContainer/VBoxContainer"]
 layout_mode = 2
 text = "NAME"
 horizontal_alignment = 1
 
-[node name="TypeContainer" parent="PokemonInfoDisplay/MarginContainer/VBoxContainer" instance=ExtResource("27_k0sc2")]
+[node name="TypeContainer" parent="PokemonInfoDisplay/MarginContainer/HBoxContainer/VBoxContainer" instance=ExtResource("27_k0sc2")]
 layout_mode = 2
 
-[node name="EloInfoContainer" parent="PokemonInfoDisplay/MarginContainer/VBoxContainer" instance=ExtResource("28_fci35")]
+[node name="EloInfoContainer" parent="PokemonInfoDisplay/MarginContainer/HBoxContainer/VBoxContainer" instance=ExtResource("28_fci35")]
 layout_mode = 2
 
-[node name="DefensiveLabel" type="Label" parent="PokemonInfoDisplay/MarginContainer/VBoxContainer"]
+[node name="DefensiveLabel" type="Label" parent="PokemonInfoDisplay/MarginContainer/HBoxContainer/VBoxContainer"]
 layout_mode = 2
 text = "Defensive Effectiveness"
 horizontal_alignment = 1
 
-[node name="DefensiveInfo" type="VBoxContainer" parent="PokemonInfoDisplay/MarginContainer/VBoxContainer"]
+[node name="DefensiveInfo" type="VBoxContainer" parent="PokemonInfoDisplay/MarginContainer/HBoxContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="EffectivenessTab" parent="PokemonInfoDisplay/MarginContainer/VBoxContainer/DefensiveInfo" instance=ExtResource("29_s5slx")]
+[node name="EffectivenessTab" parent="PokemonInfoDisplay/MarginContainer/HBoxContainer/VBoxContainer/DefensiveInfo" instance=ExtResource("29_s5slx")]
 layout_mode = 2
+
+[node name="VSeparator" type="VSeparator" parent="PokemonInfoDisplay/MarginContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="ExtendedInfoScrollArea" type="ScrollContainer" parent="PokemonInfoDisplay/MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ExtendedInfo" type="VBoxContainer" parent="PokemonInfoDisplay/MarginContainer/HBoxContainer/ExtendedInfoScrollArea"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Ability" parent="PokemonInfoDisplay/MarginContainer/HBoxContainer/ExtendedInfoScrollArea/ExtendedInfo" instance=ExtResource("36_8d71n")]
+layout_mode = 2
+
+[node name="Stats" parent="PokemonInfoDisplay/MarginContainer/HBoxContainer/ExtendedInfoScrollArea/ExtendedInfo" instance=ExtResource("36_8d71n")]
+layout_mode = 2
+title = "Stats"
+
+[node name="Height" parent="PokemonInfoDisplay/MarginContainer/HBoxContainer/ExtendedInfoScrollArea/ExtendedInfo" instance=ExtResource("35_7s8v3")]
+layout_mode = 2
+title = "Height"
+
+[node name="Weight" parent="PokemonInfoDisplay/MarginContainer/HBoxContainer/ExtendedInfoScrollArea/ExtendedInfo" instance=ExtResource("35_7s8v3")]
+layout_mode = 2
+title = "Weight"
+
+[node name="GenderRatio" parent="PokemonInfoDisplay/MarginContainer/HBoxContainer/ExtendedInfoScrollArea/ExtendedInfo" instance=ExtResource("35_7s8v3")]
+layout_mode = 2
+title = "Gender Ratio"
+
+[node name="PrevoDisplay" parent="PokemonInfoDisplay/MarginContainer/HBoxContainer/ExtendedInfoScrollArea/ExtendedInfo" instance=ExtResource("35_7s8v3")]
+layout_mode = 2
+title = "Pre-evolution"
+
+[node name="EvoDisplay" parent="PokemonInfoDisplay/MarginContainer/HBoxContainer/ExtendedInfoScrollArea/ExtendedInfo" instance=ExtResource("35_7s8v3")]
+layout_mode = 2
+title = "Evolution"
 
 [connection signal="pressed" from="TabSelector/HBoxContainer/Royale" to="TabSelector" method="_on_royale_pressed"]
 [connection signal="pressed" from="TabSelector/HBoxContainer/Leaderboard" to="TabSelector" method="_on_leaderboard_pressed"]
@@ -514,6 +601,7 @@ layout_mode = 2
 [connection signal="selection_changed" from="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/FilterOptions/Attributes/TypeSelector/TypeOption" to="Screens/Leaderboard" method="_on_type_filter_changed"]
 [connection signal="toggled" from="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/FilterOptions/Attributes/TypeSelector/TypeOption" to="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/FilterOptions/Attributes/TypeSelector/TypeOption" method="_on_toggled"]
 [connection signal="pressed" from="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/FilterOptions/Attributes/TypeSelector/PopupPanel/MarginContainer/VBoxContainer/ResetButton" to="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/FilterOptions/Attributes/TypeSelector/TypeOption" method="_on_reset_button_pressed"]
+[connection signal="toggled_filter" from="Screens/Leaderboard/MarginContainer/Content/HBoxContainer/FilterOptions/Attributes/PureType/FilterToggler" to="Screens/Leaderboard" method="_on_filter_purity_toggled"]
 [connection signal="pressed" from="SaveSelector/HBoxContainer/Delete" to="SaveSelector/HBoxContainer/SaveSelector" method="_on_delete_pressed"]
 [connection signal="confirmed" from="SaveSelector/HBoxContainer/Delete/ConfirmationDialog" to="SaveSelector/HBoxContainer/SaveSelector" method="_on_confirmation_dialog_confirmed"]
 [connection signal="toggled" from="SaveSelector/HBoxContainer/New" to="SaveSelector/HBoxContainer/SaveSelector" method="_on_new_toggled"]

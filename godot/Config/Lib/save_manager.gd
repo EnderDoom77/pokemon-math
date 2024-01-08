@@ -54,7 +54,7 @@ class SaveData extends RefCounted:
 	
 	@warning_ignore("shadowed_variable")
 	static func from_dict(savename, data: Dictionary) -> SaveData:
-		var eligible_pokemon: Array[String]
+		var eligible_pokemon: Array[String] = []
 		eligible_pokemon.assign(data.get("eligible_pokemon", []))
 		var result = SaveData.new(savename, eligible_pokemon)
 		for k:String in data.get("elo_info", {}).keys():
