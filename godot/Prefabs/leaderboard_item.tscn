@@ -1,6 +1,6 @@
 [gd_scene load_steps=7 format=3 uid="uid://dsixfsfbriiqa"]
 
-[ext_resource type="Script" path="res://Scripts/UI/PokemonDisplay.gd" id="1_3ol6t"]
+[ext_resource type="Script" path="res://Scripts/UI/pokemon_display.gd" id="1_3ol6t"]
 [ext_resource type="Texture2D" uid="uid://c4uf1o04bmmym" path="res://icon.svg" id="2_dae2m"]
 [ext_resource type="Theme" uid="uid://d36lmlivpbqsv" path="res://Config/Themes/BaseUITheme.theme" id="3_4xtxn"]
 [ext_resource type="PackedScene" uid="uid://cwt7t1q7bsx4" path="res://Prefabs/type_container.tscn" id="4_d0mo5"]

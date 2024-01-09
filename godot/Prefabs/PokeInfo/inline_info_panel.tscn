@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://cndfpmfrflndk"]
 
-[ext_resource type="Script" path="res://Scripts/UI/GenericInfoDisplay.gd" id="1_g5iao"]
+[ext_resource type="Script" path="res://Scripts/UI/generic_info_display.gd" id="1_g5iao"]
 [ext_resource type="Theme" uid="uid://d36lmlivpbqsv" path="res://Config/Themes/BaseUITheme.theme" id="2_felf3"]
 
 [node name="InlineInfoPanel" type="PanelContainer" node_paths=PackedStringArray("title_label", "description_label")]

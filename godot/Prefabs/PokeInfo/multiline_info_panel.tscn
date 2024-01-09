@@ -1,8 +1,8 @@
 [gd_scene load_steps=6 format=3 uid="uid://djh1aihh285fy"]
 
-[ext_resource type="Script" path="res://Scripts/UI/GenericInfoDisplay.gd" id="1_1v1uh"]
+[ext_resource type="Script" path="res://Scripts/UI/generic_info_display.gd" id="1_1v1uh"]
 [ext_resource type="Texture2D" uid="uid://b8wqsh3rjtuid" path="res://Media/Images/UI/ChevronDown.png" id="2_cfxup"]
-[ext_resource type="Script" path="res://Scripts/UI/CollapseButton.gd" id="3_6j3pe"]
+[ext_resource type="Script" path="res://Scripts/UI/collapse_button.gd" id="3_6j3pe"]
 [ext_resource type="Texture2D" uid="uid://rwr24oewj2sc" path="res://Media/Images/UI/ChevronRight.png" id="4_2qogu"]
 [ext_resource type="Theme" uid="uid://d36lmlivpbqsv" path="res://Config/Themes/BaseUITheme.theme" id="5_swemf"]
 

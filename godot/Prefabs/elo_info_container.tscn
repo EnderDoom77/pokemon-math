@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://cwdp8eldkoj2t"]
 
 [ext_resource type="Theme" uid="uid://d36lmlivpbqsv" path="res://Config/Themes/BaseUITheme.theme" id="1_jgvw2"]
-[ext_resource type="Script" path="res://Scripts/UI/EloInfoContainer.gd" id="2_e86n1"]
+[ext_resource type="Script" path="res://Scripts/UI/elo_info_container.gd" id="2_e86n1"]
 
 [node name="EloInfoContainer" type="HBoxContainer"]
 theme = ExtResource("1_jgvw2")
